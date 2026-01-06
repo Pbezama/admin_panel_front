@@ -1,0 +1,19 @@
+{
+  "name": "admin-panel-frontend",
+  "version": "1.0.0",
+  "description": "Frontend Admin Panel - Next.js App Router",
+  "private": true,
+  "scripts": {
+    "dev": "next dev -p 3002",
+    "build": "next build",
+    "start": "next start -p 3002",
+    "lint": "next lint"
+  },
+  "dependencies": {
+    "next": "^16.1.1",
+    "react": "^19.2.3",
+    "react-dom": "^19.2.3",
+    "react-icons": "^5.5.0",
+    "uuid": "^13.0.0"
+  }
+}
