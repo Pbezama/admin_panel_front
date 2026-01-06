@@ -101,6 +101,9 @@ export function AuthProvider({ children }) {
   }
 
   const esSuperAdmin = usuario?.es_super_admin || false
+  const tipoUsuario = usuario?.tipo_usuario || 'adm'
+  const esColaborador = tipoUsuario === 'colaborador'
+  const esAdministrador = tipoUsuario === 'adm' || esSuperAdmin
 
   const value = {
     usuario,
@@ -109,6 +112,9 @@ export function AuthProvider({ children }) {
     sesionChatId,
     mensajesCount,
     esSuperAdmin,
+    tipoUsuario,
+    esColaborador,
+    esAdministrador,
     login,
     logout,
     reiniciarChat,

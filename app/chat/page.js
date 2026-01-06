@@ -8,6 +8,7 @@ import { api } from '@/lib/api'
 import MensajeChat from '@/components/Chat/MensajeChat'
 import EditorManual from '@/components/Editor/EditorManual'
 import MetaAdsView from '@/components/Views/MetaAdsView'
+import TareasView from '@/components/Views/TareasView'
 import '@/styles/Chat.css'
 
 export default function ChatPage() {
@@ -23,7 +24,7 @@ export default function ChatPage() {
   const [anchoChat, setAnchoChat] = useState(60)
   const [arrastrando, setArrastrando] = useState(false)
 
-  const { usuario, loading, logout, sesionChatId, mensajesCount, incrementarMensajes, reiniciarChat, esSuperAdmin } = useAuth()
+  const { usuario, loading, logout, sesionChatId, mensajesCount, incrementarMensajes, reiniciarChat, esSuperAdmin, esColaborador } = useAuth()
   const { vistaActiva, navegarA, contextoVista } = useView()
   const router = useRouter()
   const chatEndRef = useRef(null)
@@ -38,9 +39,14 @@ export default function ChatPage() {
     }
     if (usuario) {
       cargarDatosMarca()
-      agregarMensajeBienvenida()
+      // Si es colaborador, redirigir a vista de tareas
+      if (esColaborador) {
+        navegarA('tareas')
+      } else {
+        agregarMensajeBienvenida()
+      }
     }
-  }, [usuario, loading, router])
+  }, [usuario, loading, router, esColaborador])
 
   // Scroll al final cuando hay nuevos mensajes
   useEffect(() => {
@@ -422,6 +428,40 @@ El usuario ya aprobo esta delegacion. Procede a pedir confirmacion para agregar 
         return
       }
 
+      // Crear tarea
+      if (respuesta.tipo === 'crear_tarea' && respuesta.tarea) {
+        try {
+          const resultado = await api.crearTarea({
+            ...respuesta.tarea,
+            creado_por_sistema: true
+          })
+
+          if (resultado.success) {
+            const mensajeExito = {
+              rol: 'assistant',
+              contenido: respuesta.contenido + '\n\nLa tarea ha sido creada exitosamente.',
+              tipo: 'exito',
+              timestamp: new Date().toISOString(),
+              modoOrigen: 'controlador'
+            }
+            setMensajes(prev => [...prev, mensajeExito])
+          } else {
+            throw new Error(resultado.error)
+          }
+        } catch (err) {
+          const mensajeError = {
+            rol: 'assistant',
+            contenido: `Error al crear la tarea: ${err.message}`,
+            tipo: 'error',
+            timestamp: new Date().toISOString()
+          }
+          setMensajes(prev => [...prev, mensajeError])
+        }
+        setEnviando(false)
+        inputRef.current?.focus()
+        return
+      }
+
       // Accion confirmada con ejecutar
       if (respuesta.tipo === 'accion_confirmada' && respuesta.ejecutar) {
         await ejecutarAccion(respuesta.ejecutar)
@@ -671,6 +711,10 @@ El usuario ya aprobo esta delegacion. Procede a pedir confirmacion para agregar 
     return <MetaAdsView contexto={contextoVista} />
   }
 
+  if (vistaActiva === 'tareas') {
+    return <TareasView />
+  }
+
   return (
     <div className="app-layout">
       {/* Header Global */}
@@ -815,6 +859,15 @@ El usuario ya aprobo esta delegacion. Procede a pedir confirmacion para agregar 
                       <span className="option-icon">@</span>
                       <span className="option-texto">Meta Ads</span>
                       <span className="option-desc">Ver campanas</span>
+                    </button>
+                    <button
+                      type="button"
+                      className="menu-input-option option-tareas"
+                      onClick={() => { navegarA('tareas'); setMenuInputAbierto(false) }}
+                    >
+                      <span className="option-icon">T</span>
+                      <span className="option-texto">Tareas</span>
+                      <span className="option-desc">Ver tareas</span>
                     </button>
                     <div className="menu-input-divider"></div>
                     <button
