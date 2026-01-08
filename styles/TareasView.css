@@ -19,6 +19,72 @@
   color: #64748b;
 }
 
+/* Notificación Flotante */
+.notificacion-flotante {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  padding: 14px 20px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 14px;
+  font-weight: 500;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+  z-index: 2000;
+  animation: slideIn 0.3s ease;
+}
+
+@keyframes slideIn {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+.notificacion-flotante.exito {
+  background: #10b981;
+  color: white;
+}
+
+.notificacion-flotante.error {
+  background: #ef4444;
+  color: white;
+}
+
+.notificacion-flotante.info {
+  background: #3b82f6;
+  color: white;
+}
+
+.notificacion-flotante span:first-child {
+  font-size: 1.2rem;
+}
+
+.notificacion-flotante button {
+  background: rgba(255, 255, 255, 0.2);
+  border: none;
+  color: white;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  cursor: pointer;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-left: 8px;
+}
+
+.notificacion-flotante button:hover {
+  background: rgba(255, 255, 255, 0.3);
+}
+
 /* Header */
 .tareas-header {
   background: #fff;
@@ -1560,4 +1626,305 @@
 .tab-contenido::-webkit-scrollbar-thumb:hover,
 .notas-lista::-webkit-scrollbar-thumb:hover {
   background: #94a3b8;
+}
+
+/* ============================================
+   CHATIA FLOTANTE
+   ============================================ */
+
+/* Boton flotante para abrir chat */
+.chatia-boton-flotante {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 20px;
+  background: linear-gradient(135deg, #8b5cf6 0%, #6366f1 100%);
+  border: none;
+  border-radius: 50px;
+  color: white;
+  cursor: pointer;
+  font-size: 15px;
+  font-weight: 500;
+  box-shadow: 0 4px 20px rgba(139, 92, 246, 0.4);
+  transition: all 0.3s ease;
+  z-index: 1000;
+}
+
+.chatia-boton-flotante:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 6px 25px rgba(139, 92, 246, 0.5);
+}
+
+.chatia-boton-icon {
+  font-size: 1.3rem;
+}
+
+.chatia-boton-texto {
+  font-weight: 600;
+}
+
+/* Ventana flotante del chat */
+.chatia-flotante {
+  position: fixed;
+  width: 380px;
+  height: 500px;
+  background: #fff;
+  border-radius: 16px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+  display: flex;
+  flex-direction: column;
+  z-index: 1001;
+  overflow: hidden;
+  transition: height 0.3s ease, box-shadow 0.2s ease;
+}
+
+.chatia-flotante.minimizado {
+  height: auto;
+}
+
+.chatia-flotante.arrastrando {
+  box-shadow: 0 15px 50px rgba(0, 0, 0, 0.25);
+  cursor: grabbing;
+}
+
+/* Header del chat (arrastrable) */
+.chatia-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 16px;
+  background: linear-gradient(135deg, #8b5cf6 0%, #6366f1 100%);
+  color: white;
+  cursor: grab;
+  user-select: none;
+}
+
+.chatia-flotante.arrastrando .chatia-header {
+  cursor: grabbing;
+}
+
+.chatia-header-info {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.chatia-icon {
+  font-size: 1.3rem;
+}
+
+.chatia-titulo {
+  font-weight: 600;
+  font-size: 15px;
+}
+
+.chatia-header-acciones {
+  display: flex;
+  gap: 6px;
+}
+
+.chatia-btn-minimizar,
+.chatia-btn-cerrar {
+  width: 28px;
+  height: 28px;
+  border: none;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 6px;
+  color: white;
+  cursor: pointer;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+}
+
+.chatia-btn-minimizar:hover,
+.chatia-btn-cerrar:hover {
+  background: rgba(255, 255, 255, 0.3);
+}
+
+/* Area de mensajes */
+.chatia-mensajes {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  background: #f8fafc;
+}
+
+.chatia-mensaje {
+  max-width: 85%;
+  padding: 12px 16px;
+  border-radius: 16px;
+  font-size: 14px;
+  line-height: 1.5;
+  animation: chatia-aparecer 0.3s ease;
+}
+
+@keyframes chatia-aparecer {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.chatia-mensaje.user {
+  align-self: flex-end;
+  background: linear-gradient(135deg, #8b5cf6 0%, #6366f1 100%);
+  color: white;
+  border-bottom-right-radius: 4px;
+}
+
+.chatia-mensaje.assistant {
+  align-self: flex-start;
+  background: white;
+  color: #1e293b;
+  border: 1px solid #e2e8f0;
+  border-bottom-left-radius: 4px;
+}
+
+.chatia-mensaje-contenido {
+  word-wrap: break-word;
+}
+
+.chatia-mensaje-hora {
+  display: block;
+  font-size: 11px;
+  opacity: 0.7;
+  margin-top: 6px;
+  text-align: right;
+}
+
+/* Typing indicator */
+.chatia-typing {
+  display: flex;
+  gap: 4px;
+  padding: 4px 0;
+}
+
+.chatia-typing span {
+  width: 8px;
+  height: 8px;
+  background: #94a3b8;
+  border-radius: 50%;
+  animation: chatia-bounce 1.4s infinite ease-in-out both;
+}
+
+.chatia-typing span:nth-child(1) {
+  animation-delay: -0.32s;
+}
+
+.chatia-typing span:nth-child(2) {
+  animation-delay: -0.16s;
+}
+
+@keyframes chatia-bounce {
+  0%, 80%, 100% {
+    transform: scale(0);
+  }
+  40% {
+    transform: scale(1);
+  }
+}
+
+/* Input del chat */
+.chatia-input-form {
+  display: flex;
+  gap: 10px;
+  padding: 14px 16px;
+  background: white;
+  border-top: 1px solid #e2e8f0;
+}
+
+.chatia-input-form textarea {
+  flex: 1;
+  padding: 10px 14px;
+  border: 1px solid #e2e8f0;
+  border-radius: 20px;
+  font-size: 14px;
+  font-family: inherit;
+  resize: none;
+  max-height: 80px;
+  overflow-y: auto;
+}
+
+.chatia-input-form textarea:focus {
+  outline: none;
+  border-color: #8b5cf6;
+  box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.1);
+}
+
+.chatia-input-form button {
+  width: 42px;
+  height: 42px;
+  border: none;
+  background: linear-gradient(135deg, #8b5cf6 0%, #6366f1 100%);
+  border-radius: 50%;
+  color: white;
+  cursor: pointer;
+  font-size: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+  flex-shrink: 0;
+}
+
+.chatia-input-form button:hover:not(:disabled) {
+  transform: scale(1.05);
+  box-shadow: 0 4px 12px rgba(139, 92, 246, 0.3);
+}
+
+.chatia-input-form button:disabled {
+  background: #94a3b8;
+  cursor: not-allowed;
+}
+
+/* Scrollbar del chat */
+.chatia-mensajes::-webkit-scrollbar {
+  width: 6px;
+}
+
+.chatia-mensajes::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.chatia-mensajes::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 3px;
+}
+
+.chatia-mensajes::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+/* Responsive para ChatIA */
+@media (max-width: 480px) {
+  .chatia-flotante {
+    width: calc(100vw - 32px);
+    height: calc(100vh - 100px);
+    left: 16px !important;
+    top: 16px !important;
+    border-radius: 12px;
+  }
+
+  .chatia-boton-flotante {
+    bottom: 16px;
+    right: 16px;
+    padding: 12px 16px;
+  }
+
+  .chatia-boton-texto {
+    display: none;
+  }
 }

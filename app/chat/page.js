@@ -437,9 +437,13 @@ El usuario ya aprobo esta delegacion. Procede a pedir confirmacion para agregar 
           })
 
           if (resultado.success) {
+            let mensajeContenido = respuesta.contenido + '\n\n✓ Tarea creada exitosamente.'
+            if (resultado.whatsappEnviado) {
+              mensajeContenido += `\n📱 WhatsApp enviado a ${resultado.whatsappDestinatario}`
+            }
             const mensajeExito = {
               rol: 'assistant',
-              contenido: respuesta.contenido + '\n\nLa tarea ha sido creada exitosamente.',
+              contenido: mensajeContenido,
               tipo: 'exito',
               timestamp: new Date().toISOString(),
               modoOrigen: 'controlador'

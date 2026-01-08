@@ -9,9 +9,10 @@
  * - Filtros y busqueda
  * - Indicadores de vencimiento
  * - Historial de cambios
+ * - ChatIA flotante para colaboradores
  */
 
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { useAuth } from '@/context/AuthContext'
 import { useView } from '@/context/ViewContext'
 import { api } from '@/lib/api'
@@ -58,6 +59,227 @@ const formatearTamano = (bytes) => {
   if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB'
   if (bytes < 1024 * 1024 * 1024) return (bytes / (1024 * 1024)).toFixed(1) + ' MB'
   return (bytes / (1024 * 1024 * 1024)).toFixed(1) + ' GB'
+}
+
+// ============================================
+// COMPONENTE: ChatIA Flotante
+// ============================================
+const ChatIAFlotante = ({ usuario }) => {
+  const [abierto, setAbierto] = useState(false)
+  const [minimizado, setMinimizado] = useState(false)
+  const [mensajes, setMensajes] = useState([])
+  const [inputMensaje, setInputMensaje] = useState('')
+  const [enviando, setEnviando] = useState(false)
+  const [posicion, setPosicion] = useState({ x: 0, y: 100 })
+  const [arrastrando, setArrastrando] = useState(false)
+  const [offsetArrastre, setOffsetArrastre] = useState({ x: 0, y: 0 })
+
+  // Establecer posicion inicial en el cliente
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      setPosicion({ x: window.innerWidth - 420, y: 100 })
+    }
+  }, [])
+
+  const chatEndRef = useRef(null)
+  const contenedorRef = useRef(null)
+
+  // Scroll al final cuando hay nuevos mensajes
+  useEffect(() => {
+    if (abierto && !minimizado) {
+      chatEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+    }
+  }, [mensajes, abierto, minimizado])
+
+  // Agregar mensaje de bienvenida al abrir
+  useEffect(() => {
+    if (abierto && mensajes.length === 0) {
+      setMensajes([{
+        rol: 'assistant',
+        contenido: `Hola ${usuario?.nombre}! Soy ChatIA, tu asistente. Puedo ayudarte con:\n\n- Responder preguntas sobre tus tareas\n- Darte ideas y sugerencias\n- Ayudarte a redactar contenido\n\nEscribe lo que necesites.`,
+        timestamp: new Date().toISOString()
+      }])
+    }
+  }, [abierto, usuario?.nombre])
+
+  // Handlers de arrastre
+  const handleMouseDown = useCallback((e) => {
+    if (e.target.closest('.chatia-header')) {
+      setArrastrando(true)
+      const rect = contenedorRef.current.getBoundingClientRect()
+      setOffsetArrastre({
+        x: e.clientX - rect.left,
+        y: e.clientY - rect.top
+      })
+    }
+  }, [])
+
+  const handleMouseMove = useCallback((e) => {
+    if (arrastrando) {
+      const nuevoX = Math.max(0, Math.min(window.innerWidth - 400, e.clientX - offsetArrastre.x))
+      const nuevoY = Math.max(0, Math.min(window.innerHeight - 100, e.clientY - offsetArrastre.y))
+      setPosicion({ x: nuevoX, y: nuevoY })
+    }
+  }, [arrastrando, offsetArrastre])
+
+  const handleMouseUp = useCallback(() => {
+    setArrastrando(false)
+  }, [])
+
+  useEffect(() => {
+    if (arrastrando) {
+      document.addEventListener('mousemove', handleMouseMove)
+      document.addEventListener('mouseup', handleMouseUp)
+    }
+    return () => {
+      document.removeEventListener('mousemove', handleMouseMove)
+      document.removeEventListener('mouseup', handleMouseUp)
+    }
+  }, [arrastrando, handleMouseMove, handleMouseUp])
+
+  const handleEnviarMensaje = async (e) => {
+    e.preventDefault()
+    if (!inputMensaje.trim() || enviando) return
+
+    const textoMensaje = inputMensaje.trim()
+    setInputMensaje('')
+    setEnviando(true)
+
+    // Agregar mensaje del usuario
+    const mensajeUsuario = {
+      rol: 'user',
+      contenido: textoMensaje,
+      timestamp: new Date().toISOString()
+    }
+    setMensajes(prev => [...prev, mensajeUsuario])
+
+    try {
+      const historial = mensajes.map(m => ({
+        rol: m.rol,
+        contenido: m.contenido
+      }))
+
+      const respuesta = await api.chatIA(textoMensaje, historial, {
+        nombreMarca: usuario?.nombre_marca,
+        datosMarca: []
+      })
+
+      const mensajeRespuesta = {
+        rol: 'assistant',
+        contenido: respuesta.contenido,
+        timestamp: new Date().toISOString()
+      }
+      setMensajes(prev => [...prev, mensajeRespuesta])
+    } catch (err) {
+      console.error('Error en ChatIA:', err)
+      const mensajeError = {
+        rol: 'assistant',
+        contenido: 'Lo siento, tuve un problema. Intenta de nuevo.',
+        timestamp: new Date().toISOString()
+      }
+      setMensajes(prev => [...prev, mensajeError])
+    }
+
+    setEnviando(false)
+  }
+
+  const handleKeyDown = (e) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault()
+      handleEnviarMensaje(e)
+    }
+  }
+
+  // Boton flotante cuando esta cerrado
+  if (!abierto) {
+    return (
+      <button
+        className="chatia-boton-flotante"
+        onClick={() => setAbierto(true)}
+        title="Abrir ChatIA"
+      >
+        <span className="chatia-boton-icon">💬</span>
+        <span className="chatia-boton-texto">ChatIA</span>
+      </button>
+    )
+  }
+
+  return (
+    <div
+      ref={contenedorRef}
+      className={`chatia-flotante ${minimizado ? 'minimizado' : ''} ${arrastrando ? 'arrastrando' : ''}`}
+      style={{ left: posicion.x, top: posicion.y }}
+      onMouseDown={handleMouseDown}
+    >
+      {/* Header arrastrable */}
+      <div className="chatia-header">
+        <div className="chatia-header-info">
+          <span className="chatia-icon">🤖</span>
+          <span className="chatia-titulo">ChatIA</span>
+        </div>
+        <div className="chatia-header-acciones">
+          <button
+            className="chatia-btn-minimizar"
+            onClick={() => setMinimizado(!minimizado)}
+            title={minimizado ? 'Expandir' : 'Minimizar'}
+          >
+            {minimizado ? '◻' : '—'}
+          </button>
+          <button
+            className="chatia-btn-cerrar"
+            onClick={() => setAbierto(false)}
+            title="Cerrar"
+          >
+            ×
+          </button>
+        </div>
+      </div>
+
+      {/* Contenido */}
+      {!minimizado && (
+        <>
+          {/* Area de mensajes con scroll */}
+          <div className="chatia-mensajes">
+            {mensajes.map((msg, idx) => (
+              <div key={idx} className={`chatia-mensaje ${msg.rol}`}>
+                <div className="chatia-mensaje-contenido">
+                  {msg.contenido.split('\n').map((linea, i) => (
+                    <span key={i}>{linea}<br /></span>
+                  ))}
+                </div>
+                <span className="chatia-mensaje-hora">
+                  {new Date(msg.timestamp).toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' })}
+                </span>
+              </div>
+            ))}
+            {enviando && (
+              <div className="chatia-mensaje assistant">
+                <div className="chatia-typing">
+                  <span></span><span></span><span></span>
+                </div>
+              </div>
+            )}
+            <div ref={chatEndRef} />
+          </div>
+
+          {/* Input */}
+          <form onSubmit={handleEnviarMensaje} className="chatia-input-form">
+            <textarea
+              value={inputMensaje}
+              onChange={(e) => setInputMensaje(e.target.value)}
+              onKeyDown={handleKeyDown}
+              placeholder="Escribe tu mensaje..."
+              disabled={enviando}
+              rows={1}
+            />
+            <button type="submit" disabled={enviando || !inputMensaje.trim()}>
+              {enviando ? '...' : '➤'}
+            </button>
+          </form>
+        </>
+      )}
+    </div>
+  )
 }
 
 // ============================================
@@ -535,12 +757,16 @@ const NuevaTareaModal = ({ onClose, onCrear, colaboradores }) => {
   const handleSubmit = async (e) => {
     e.preventDefault()
     if (!formData.titulo.trim()) return
+    if (!formData.asignado_a) {
+      alert('Debes asignar la tarea a un colaborador')
+      return
+    }
 
     setCreando(true)
     const colaborador = colaboradores.find(c => c.id === parseInt(formData.asignado_a))
     await onCrear({
       ...formData,
-      asignado_a: formData.asignado_a ? parseInt(formData.asignado_a) : null,
+      asignado_a: parseInt(formData.asignado_a),
       nombre_asignado: colaborador?.nombre || null,
       fecha_limite: formData.fecha_limite || null
     })
@@ -605,11 +831,11 @@ const NuevaTareaModal = ({ onClose, onCrear, colaboradores }) => {
               />
             </div>
             <div className="form-grupo">
-              <label>Asignar a</label>
-              <select value={formData.asignado_a} onChange={(e) => setFormData({...formData, asignado_a: e.target.value})}>
-                <option value="">Sin asignar</option>
+              <label>Asignar a *</label>
+              <select value={formData.asignado_a} onChange={(e) => setFormData({...formData, asignado_a: e.target.value})} required>
+                <option value="">Seleccionar colaborador</option>
                 {colaboradores.map(col => (
-                  <option key={col.id} value={col.id}>{col.nombre} ({col.especialidad})</option>
+                  <option key={col.id} value={col.id}>{col.nombre}</option>
                 ))}
               </select>
             </div>
@@ -751,6 +977,7 @@ const TareasView = () => {
   const [tareaSeleccionada, setTareaSeleccionada] = useState(null)
   const [mostrarNuevaTarea, setMostrarNuevaTarea] = useState(false)
   const [mostrarTodosArchivos, setMostrarTodosArchivos] = useState(false)
+  const [notificacion, setNotificacion] = useState(null)
 
   // Filtros
   const [busqueda, setBusqueda] = useState('')
@@ -823,9 +1050,27 @@ const TareasView = () => {
   const handleCrearTarea = async (datosTarea) => {
     try {
       const resultado = await api.crearTarea(datosTarea)
-      if (resultado.success) setTareas([resultado.data, ...tareas])
+      if (resultado.success) {
+        setTareas([resultado.data, ...tareas])
+        // Mostrar notificación de WhatsApp enviado
+        if (resultado.whatsappEnviado) {
+          setNotificacion({
+            tipo: 'exito',
+            mensaje: `Tarea creada y WhatsApp enviado a ${resultado.whatsappDestinatario}`
+          })
+        } else {
+          setNotificacion({
+            tipo: 'info',
+            mensaje: 'Tarea creada (WhatsApp no enviado - sin teléfono)'
+          })
+        }
+        // Auto-ocultar notificación después de 4 segundos
+        setTimeout(() => setNotificacion(null), 4000)
+      }
     } catch (err) {
       console.error('Error creando tarea:', err)
+      setNotificacion({ tipo: 'error', mensaje: 'Error al crear la tarea' })
+      setTimeout(() => setNotificacion(null), 4000)
     }
   }
 
@@ -869,6 +1114,15 @@ const TareasView = () => {
 
   return (
     <div className="tareas-view">
+      {/* Notificación flotante */}
+      {notificacion && (
+        <div className={`notificacion-flotante ${notificacion.tipo}`}>
+          <span>{notificacion.tipo === 'exito' ? '✓' : notificacion.tipo === 'error' ? '✕' : 'ℹ'}</span>
+          {notificacion.mensaje}
+          <button onClick={() => setNotificacion(null)}>×</button>
+        </div>
+      )}
+
       {/* Header */}
       <header className="tareas-header">
         <div className="header-left">
@@ -1022,6 +1276,11 @@ const TareasView = () => {
         <TodosArchivosModal
           onClose={() => setMostrarTodosArchivos(false)}
         />
+      )}
+
+      {/* ChatIA Flotante - Solo para colaboradores */}
+      {esColaborador && (
+        <ChatIAFlotante usuario={usuario} />
       )}
     </div>
   )
