@@ -9,6 +9,7 @@ import MensajeChat from '@/components/Chat/MensajeChat'
 import EditorManual from '@/components/Editor/EditorManual'
 import MetaAdsView from '@/components/Views/MetaAdsView'
 import TareasView from '@/components/Views/TareasView'
+import IntegracionesView from '@/components/Views/IntegracionesView'
 import '@/styles/Chat.css'
 
 export default function ChatPage() {
@@ -24,20 +25,28 @@ export default function ChatPage() {
   const [anchoChat, setAnchoChat] = useState(60)
   const [arrastrando, setArrastrando] = useState(false)
 
-  const { usuario, loading, logout, sesionChatId, mensajesCount, incrementarMensajes, reiniciarChat, esSuperAdmin, esColaborador } = useAuth()
+  const { usuario, loading, logout, sesionChatId, mensajesCount, incrementarMensajes, reiniciarChat, esSuperAdmin, esColaborador, onboardingCompletado, requiereOnboarding } = useAuth()
   const { vistaActiva, navegarA, contextoVista } = useView()
   const router = useRouter()
   const chatEndRef = useRef(null)
   const inputRef = useRef(null)
   const menuInputRef = useRef(null)
 
-  // Redirigir si no esta logueado
+  // Redirigir si no esta logueado o si no completó onboarding
   useEffect(() => {
     if (!loading && !usuario) {
       router.push('/login')
       return
     }
-    if (usuario) {
+
+    // Si no ha completado onboarding, redirigir
+    if (!loading && usuario && onboardingCompletado === false) {
+      router.push('/onboarding')
+      return
+    }
+
+    // Solo cargar datos cuando loading termine y tengamos usuario
+    if (!loading && usuario && onboardingCompletado !== false) {
       cargarDatosMarca()
       // Si es colaborador, redirigir a vista de tareas
       if (esColaborador) {
@@ -46,7 +55,7 @@ export default function ChatPage() {
         agregarMensajeBienvenida()
       }
     }
-  }, [usuario, loading, router, esColaborador])
+  }, [usuario, loading, router, esColaborador, onboardingCompletado])
 
   // Scroll al final cuando hay nuevos mensajes
   useEffect(() => {
@@ -108,6 +117,12 @@ export default function ChatPage() {
       }
     } catch (error) {
       console.error('Error al cargar datos:', error)
+      // Si es error de autenticación, redirigir a login
+      if (error?.status === 401 || error?.status === 403) {
+        console.warn('Token inválido en cargarDatosMarca, redirigiendo a login')
+        logout()
+        router.push('/login')
+      }
     }
   }
 
@@ -719,6 +734,10 @@ El usuario ya aprobo esta delegacion. Procede a pedir confirmacion para agregar 
     return <TareasView />
   }
 
+  if (vistaActiva === 'integraciones') {
+    return <IntegracionesView />
+  }
+
   return (
     <div className="app-layout">
       {/* Header Global */}
@@ -872,6 +891,15 @@ El usuario ya aprobo esta delegacion. Procede a pedir confirmacion para agregar 
                       <span className="option-icon">T</span>
                       <span className="option-texto">Tareas</span>
                       <span className="option-desc">Ver tareas</span>
+                    </button>
+                    <button
+                      type="button"
+                      className="menu-input-option option-integraciones"
+                      onClick={() => { navegarA('integraciones'); setMenuInputAbierto(false) }}
+                    >
+                      <span className="option-icon">+</span>
+                      <span className="option-texto">Integraciones</span>
+                      <span className="option-desc">Facebook/Instagram</span>
                     </button>
                     <div className="menu-input-divider"></div>
                     <button
