@@ -16,6 +16,7 @@ import { useState, useEffect, useRef, useCallback } from 'react'
 import { useAuth } from '@/context/AuthContext'
 import { useView } from '@/context/ViewContext'
 import { api } from '@/lib/api'
+import NotificacionesCampana from '@/components/NotificacionesCampana'
 import '@/styles/TareasView.css'
 
 // Estados del pipeline
@@ -961,6 +962,186 @@ const TodosArchivosModal = ({ onClose, onVerTarea }) => {
 }
 
 // ============================================
+// COMPONENTE: Tarjeta de Publicacion Editable
+// ============================================
+
+// Funcion para parsear el valor que viene concatenado con |
+const parsearValorPublicacion = (valorRaw) => {
+  if (!valorRaw) return { categoria: '', clave: '', prioridad: 3, contenido: '' }
+
+  // Si no tiene el formato con |, devolver como contenido directo
+  if (!valorRaw.includes('|')) {
+    return { categoria: '', clave: '', prioridad: 3, contenido: valorRaw }
+  }
+
+  const resultado = { categoria: '', clave: '', prioridad: 3, contenido: '' }
+
+  // Dividir por | y procesar cada parte
+  const partes = valorRaw.split('|').map(p => p.trim())
+
+  for (const parte of partes) {
+    if (parte.toLowerCase().startsWith('categoría:') || parte.toLowerCase().startsWith('categoria:')) {
+      resultado.categoria = parte.split(':').slice(1).join(':').trim()
+    } else if (parte.toLowerCase().startsWith('clave:')) {
+      resultado.clave = parte.split(':').slice(1).join(':').trim()
+    } else if (parte.toLowerCase().startsWith('prioridad:')) {
+      const prioridadStr = parte.split(':').slice(1).join(':').trim()
+      resultado.prioridad = parseInt(prioridadStr) || 3
+    } else if (parte.toLowerCase().startsWith('valor:')) {
+      resultado.contenido = parte.split(':').slice(1).join(':').trim()
+    } else if (!parte.includes(':')) {
+      // Si no tiene formato key:value, es parte del contenido
+      resultado.contenido = resultado.contenido ? resultado.contenido + ' ' + parte : parte
+    }
+  }
+
+  return resultado
+}
+
+const PublicacionCardEditable = ({ publicacion, onAprobar, onRechazar, procesando }) => {
+  // Parsear el valor que viene concatenado
+  const datosParseados = parsearValorPublicacion(publicacion.valor)
+
+  const [campos, setCampos] = useState({
+    categoria: publicacion.categoria || datosParseados.categoria || '',
+    clave: publicacion.clave || datosParseados.clave || '',
+    valor: datosParseados.contenido || '',
+    prioridad: publicacion.prioridad || datosParseados.prioridad || 3,
+    fecha_inicio: publicacion.fecha_inicio ? publicacion.fecha_inicio.split('T')[0] : '',
+    fecha_caducidad: publicacion.fecha_caducidad ? publicacion.fecha_caducidad.split('T')[0] : ''
+  })
+
+  const handleChange = (e) => {
+    const { name, value } = e.target
+    setCampos(prev => ({ ...prev, [name]: value }))
+  }
+
+  const getCamposParaEnviar = () => ({
+    categoria: campos.categoria || 'publicacion',
+    clave: campos.clave,
+    valor: campos.valor,
+    prioridad: parseInt(campos.prioridad) || 3,
+    fecha_inicio: campos.fecha_inicio || null,
+    fecha_caducidad: campos.fecha_caducidad || null
+  })
+
+  const handleAprobar = () => {
+    onAprobar(publicacion, getCamposParaEnviar())
+  }
+
+  const handleRechazar = () => {
+    onRechazar(publicacion)
+  }
+
+  return (
+    <div className="publicacion-card publicacion-card-editable">
+      <div className="publicacion-badge">Nueva Regla</div>
+
+      <div className="publicacion-contenido">
+        {/* Contenido / Respuesta - Campo principal destacado */}
+        <div className="publicacion-campo-editable campo-principal">
+          <label>Contenido / Respuesta</label>
+          <textarea
+            name="valor"
+            value={campos.valor}
+            onChange={handleChange}
+            rows={4}
+            placeholder="Contenido o respuesta automatica"
+            disabled={procesando}
+          />
+        </div>
+
+        {/* Fila: Categoria y Clave */}
+        <div className="publicacion-campos-row dos-columnas">
+          <div className="publicacion-campo-editable">
+            <label>Categoria</label>
+            <input
+              type="text"
+              name="categoria"
+              value={campos.categoria}
+              onChange={handleChange}
+              placeholder="Ej: Promocion, Consulta, Info"
+              disabled={procesando}
+            />
+          </div>
+
+          <div className="publicacion-campo-editable">
+            <label>Clave / Identificador</label>
+            <input
+              type="text"
+              name="clave"
+              value={campos.clave}
+              onChange={handleChange}
+              placeholder="Identificador unico"
+              disabled={procesando}
+            />
+          </div>
+        </div>
+
+        {/* Fila: Prioridad y Fechas */}
+        <div className="publicacion-campos-row tres-columnas">
+          <div className="publicacion-campo-editable campo-small">
+            <label>Prioridad</label>
+            <select name="prioridad" value={campos.prioridad} onChange={handleChange} disabled={procesando}>
+              <option value="1">1 - Muy baja</option>
+              <option value="2">2 - Baja</option>
+              <option value="3">3 - Media</option>
+              <option value="4">4 - Alta</option>
+              <option value="5">5 - Muy alta</option>
+            </select>
+          </div>
+
+          <div className="publicacion-campo-editable campo-small">
+            <label>Fecha Inicio</label>
+            <input
+              type="date"
+              name="fecha_inicio"
+              value={campos.fecha_inicio}
+              onChange={handleChange}
+              disabled={procesando}
+            />
+          </div>
+
+          <div className="publicacion-campo-editable campo-small">
+            <label>Fecha Caducidad</label>
+            <input
+              type="date"
+              name="fecha_caducidad"
+              value={campos.fecha_caducidad}
+              onChange={handleChange}
+              disabled={procesando}
+            />
+          </div>
+        </div>
+
+        {/* Meta info */}
+        <div className="publicacion-meta">
+          <span>Creada: {publicacion.creado_en ? new Date(publicacion.creado_en).toLocaleDateString('es-CL') : '-'}</span>
+        </div>
+      </div>
+
+      {/* Acciones */}
+      <div className="publicacion-acciones">
+        <button
+          className="btn-aprobar"
+          onClick={handleAprobar}
+          disabled={procesando}
+        >
+          {procesando ? '...' : '✓ Aprobar'}
+        </button>
+        <button
+          className="btn-rechazar"
+          onClick={handleRechazar}
+          disabled={procesando}
+        >
+          ✕ Rechazar
+        </button>
+      </div>
+    </div>
+  )
+}
+
+// ============================================
 // COMPONENTE PRINCIPAL: TareasView
 // ============================================
 const TareasView = () => {
@@ -971,6 +1152,10 @@ const TareasView = () => {
   const [colaboradores, setColaboradores] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
+
+  // Publicaciones pendientes
+  const [publicacionesPendientes, setPublicacionesPendientes] = useState([])
+  const [procesandoPublicacion, setProcesandoPublicacion] = useState(null)
 
   // UI State
   const [vistaActual, setVistaActual] = useState('pipeline')
@@ -1012,9 +1197,20 @@ const TareasView = () => {
     }
   }
 
+  const cargarPublicacionesPendientes = async () => {
+    if (!esAdministrador) return
+    try {
+      const resultado = await api.getPublicacionesPendientes()
+      if (resultado.success) setPublicacionesPendientes(resultado.data)
+    } catch (err) {
+      console.error('Error cargando publicaciones pendientes:', err)
+    }
+  }
+
   useEffect(() => {
     cargarTareas()
     cargarColaboradores()
+    cargarPublicacionesPendientes()
   }, [esAdministrador])
 
   // Filtrar tareas
@@ -1072,6 +1268,60 @@ const TareasView = () => {
       setNotificacion({ tipo: 'error', mensaje: 'Error al crear la tarea' })
       setTimeout(() => setNotificacion(null), 4000)
     }
+  }
+
+  // Handlers para publicaciones pendientes
+  const handleAprobarPublicacion = async (publicacion, camposEditados) => {
+    setProcesandoPublicacion(publicacion.id)
+    try {
+      // Si hay campos editados, usar modificar (que también aprueba)
+      // Si no hay cambios, solo aprobar
+      const hayCambios = camposEditados && (
+        camposEditados.clave !== publicacion.clave ||
+        camposEditados.valor !== publicacion.valor ||
+        camposEditados.prioridad !== publicacion.prioridad ||
+        camposEditados.fecha_inicio !== (publicacion.fecha_inicio ? publicacion.fecha_inicio.split('T')[0] : null) ||
+        camposEditados.fecha_caducidad !== (publicacion.fecha_caducidad ? publicacion.fecha_caducidad.split('T')[0] : null)
+      )
+
+      let resultado
+      if (hayCambios) {
+        resultado = await api.modificarPublicacion(publicacion.id, camposEditados)
+      } else {
+        resultado = await api.aprobarPublicacion(publicacion.clave)
+      }
+
+      if (resultado.success) {
+        setPublicacionesPendientes(prev => prev.filter(p => p.id !== publicacion.id))
+        setNotificacion({ tipo: 'exito', mensaje: hayCambios ? 'Publicacion modificada y aprobada' : 'Publicacion aprobada exitosamente' })
+      } else {
+        setNotificacion({ tipo: 'error', mensaje: resultado.error || 'Error al aprobar' })
+      }
+    } catch (err) {
+      console.error('Error aprobando publicacion:', err)
+      setNotificacion({ tipo: 'error', mensaje: 'Error al aprobar la publicacion' })
+    }
+    setProcesandoPublicacion(null)
+    setTimeout(() => setNotificacion(null), 4000)
+  }
+
+  const handleRechazarPublicacion = async (publicacion) => {
+    if (!confirm('¿Estas seguro de rechazar esta publicacion?')) return
+    setProcesandoPublicacion(publicacion.id)
+    try {
+      const resultado = await api.rechazarPublicacion(publicacion.clave)
+      if (resultado.success) {
+        setPublicacionesPendientes(prev => prev.filter(p => p.id !== publicacion.id))
+        setNotificacion({ tipo: 'exito', mensaje: 'Publicacion rechazada' })
+      } else {
+        setNotificacion({ tipo: 'error', mensaje: resultado.error || 'Error al rechazar' })
+      }
+    } catch (err) {
+      console.error('Error rechazando publicacion:', err)
+      setNotificacion({ tipo: 'error', mensaje: 'Error al rechazar la publicacion' })
+    }
+    setProcesandoPublicacion(null)
+    setTimeout(() => setNotificacion(null), 4000)
   }
 
   // Drag & Drop handlers
@@ -1150,6 +1400,7 @@ const TareasView = () => {
               </button>
             </>
           )}
+          <NotificacionesCampana esAdmin={esAdministrador} />
           <button className="btn-cerrar-sesion" onClick={logout}>
             Cerrar Sesion
           </button>
@@ -1187,6 +1438,27 @@ const TareasView = () => {
           </button>
         )}
       </div>
+
+      {/* Publicaciones Pendientes */}
+      {esAdministrador && publicacionesPendientes.length > 0 && (
+        <div className="publicaciones-pendientes">
+          <div className="publicaciones-header">
+            <h2>📢 Nuevas Publicaciones Detectadas ({publicacionesPendientes.length})</h2>
+            <span className="publicaciones-subtitulo">Edita los campos si es necesario y aprueba o rechaza</span>
+          </div>
+          <div className="publicaciones-grid">
+            {publicacionesPendientes.map(pub => (
+              <PublicacionCardEditable
+                key={pub.id}
+                publicacion={pub}
+                onAprobar={handleAprobarPublicacion}
+                onRechazar={handleRechazarPublicacion}
+                procesando={procesandoPublicacion === pub.id}
+              />
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Contenido */}
       {error ? (

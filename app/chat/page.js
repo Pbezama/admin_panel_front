@@ -10,6 +10,7 @@ import EditorManual from '@/components/Editor/EditorManual'
 import MetaAdsView from '@/components/Views/MetaAdsView'
 import TareasView from '@/components/Views/TareasView'
 import IntegracionesView from '@/components/Views/IntegracionesView'
+import NotificacionesCampana from '@/components/NotificacionesCampana'
 import '@/styles/Chat.css'
 
 export default function ChatPage() {
@@ -754,6 +755,7 @@ El usuario ya aprobo esta delegacion. Procede a pedir confirmacion para agregar 
             <span className="user-name">{usuario.nombre}</span>
             {esSuperAdmin && <span className="badge-admin">Super Admin</span>}
           </div>
+          <NotificacionesCampana onNavegar={navegarA} esAdmin={!esColaborador} />
           {modoActivo === 'chatia' && (
             <span className="badge-modo-chat badge-chatia">* Modo ChatIA</span>
           )}
