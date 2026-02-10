@@ -10,7 +10,9 @@ import EditorManual from '@/components/Editor/EditorManual'
 import MetaAdsView from '@/components/Views/MetaAdsView'
 import TareasView from '@/components/Views/TareasView'
 import IntegracionesView from '@/components/Views/IntegracionesView'
+import InformesView from '@/components/Views/InformesView'
 import NotificacionesCampana from '@/components/NotificacionesCampana'
+import SelectorMarca from '@/components/SelectorMarca'
 import '@/styles/Chat.css'
 
 export default function ChatPage() {
@@ -26,7 +28,7 @@ export default function ChatPage() {
   const [anchoChat, setAnchoChat] = useState(60)
   const [arrastrando, setArrastrando] = useState(false)
 
-  const { usuario, loading, logout, sesionChatId, mensajesCount, incrementarMensajes, reiniciarChat, esSuperAdmin, esColaborador, onboardingCompletado, requiereOnboarding } = useAuth()
+  const { usuario, loading, logout, sesionChatId, mensajesCount, incrementarMensajes, reiniciarChat, esSuperAdmin, esColaborador, onboardingCompletado, requiereOnboarding, marcaActiva } = useAuth()
   const { vistaActiva, navegarA, contextoVista } = useView()
   const router = useRouter()
   const chatEndRef = useRef(null)
@@ -112,7 +114,8 @@ export default function ChatPage() {
 
   const cargarDatosMarca = async () => {
     try {
-      const resultado = await api.getDatosMarca(usuario?.id_marca, esSuperAdmin)
+      const idMarcaCargar = marcaActiva?.id_marca || usuario?.id_marca
+      const resultado = await api.getDatosMarca(idMarcaCargar, false)
       if (resultado.success) {
         setDatosMarca(resultado.data || [])
       }
@@ -127,6 +130,13 @@ export default function ChatPage() {
     }
   }
 
+  // Recargar datos cuando cambia la marca activa (super admin)
+  useEffect(() => {
+    if (marcaActiva && usuario && !loading) {
+      cargarDatosMarca()
+    }
+  }, [marcaActiva?.id_marca])
+
   const agregarMensajeBienvenida = () => {
     const hora = new Date().getHours()
     let saludo = 'Buenos dias'
@@ -135,7 +145,7 @@ export default function ChatPage() {
 
     const mensajeBienvenida = {
       rol: 'assistant',
-      contenido: `${saludo}, ${usuario?.nombre}.\n\nSoy tu asistente para administrar los datos de **${usuario?.nombre_marca}**.\n\nPuedes hablarme en lenguaje natural, por ejemplo:\n\n- "Muestrame toda mi informacion"\n- "Quiero agregar una promocion de 20% de descuento hasta fin de mes"\n- "Desactiva la promocion del dia de la madre"\n- "Cambia la prioridad del ID 27 a 2"`,
+      contenido: `${saludo}, ${usuario?.nombre}.\n\nSoy tu asistente para administrar los datos de **${marcaActiva?.nombre_marca || usuario?.nombre_marca}**.\n\nPuedes hablarme en lenguaje natural, por ejemplo:\n\n- "Muestrame toda mi informacion"\n- "Quiero agregar una promocion de 20% de descuento hasta fin de mes"\n- "Desactiva la promocion del dia de la madre"\n- "Cambia la prioridad del ID 27 a 2"`,
       tipo: 'texto',
       mostrarBotonModo: true,
       timestamp: new Date().toISOString()
@@ -243,8 +253,8 @@ El usuario ya aprobo esta delegacion. Procede a pedir confirmacion para agregar 
 
       const contexto = {
         nombreUsuario: usuario?.nombre,
-        nombreMarca: usuario?.nombre_marca,
-        idMarca: usuario?.id_marca,
+        nombreMarca: marcaActiva?.nombre_marca || usuario?.nombre_marca,
+        idMarca: marcaActiva?.id_marca || usuario?.id_marca,
         esSuperAdmin,
         datosMarca,
         historial
@@ -253,7 +263,7 @@ El usuario ya aprobo esta delegacion. Procede a pedir confirmacion para agregar 
       let respuesta
       if (modoActivo === 'chatia') {
         respuesta = await api.chatIA(contextoInicial, historial, {
-          nombreMarca: usuario?.nombre_marca,
+          nombreMarca: marcaActiva?.nombre_marca || usuario?.nombre_marca,
           datosMarca
         })
       } else {
@@ -345,14 +355,14 @@ El usuario ya aprobo esta delegacion. Procede a pedir confirmacion para agregar 
 
       if (modoParaProcesar === 'chatia') {
         respuesta = await api.chatIA(textoMensaje, historial, {
-          nombreMarca: usuario?.nombre_marca,
+          nombreMarca: marcaActiva?.nombre_marca || usuario?.nombre_marca,
           datosMarca
         })
       } else {
         const contexto = {
           nombreUsuario: usuario?.nombre,
-          nombreMarca: usuario?.nombre_marca,
-          idMarca: usuario?.id_marca,
+          nombreMarca: marcaActiva?.nombre_marca || usuario?.nombre_marca,
+          idMarca: marcaActiva?.id_marca || usuario?.id_marca,
           esSuperAdmin,
           datosMarca,
           historial,
@@ -398,7 +408,7 @@ El usuario ya aprobo esta delegacion. Procede a pedir confirmacion para agregar 
       if (respuesta.tipo === 'consultar_comentarios') {
         try {
           const filtros = {
-            idMarca: esSuperAdmin ? null : usuario?.id_marca,
+            idMarca: marcaActiva?.id_marca || usuario?.id_marca,
             ...respuesta.filtros
           }
 
@@ -543,8 +553,8 @@ El usuario ya aprobo esta delegacion. Procede a pedir confirmacion para agregar 
       switch (accion) {
         case 'agregar':
           resultado = await api.addDato({
-            'ID marca': usuario?.id_marca,
-            'Nombre marca': usuario?.nombre_marca,
+            'ID marca': marcaActiva?.id_marca || usuario?.id_marca,
+            'Nombre marca': marcaActiva?.nombre_marca || usuario?.nombre_marca,
             categoria: parametros.categoria,
             clave: parametros.clave,
             valor: parametros.valor,
@@ -577,8 +587,8 @@ El usuario ya aprobo esta delegacion. Procede a pedir confirmacion para agregar 
         await api.saveLogAction({
           usuario_id: usuario?.id,
           usuario_nombre: usuario?.nombre,
-          id_marca: usuario?.id_marca,
-          nombre_marca: usuario?.nombre_marca,
+          id_marca: marcaActiva?.id_marca || usuario?.id_marca,
+          nombre_marca: marcaActiva?.nombre_marca || usuario?.nombre_marca,
           tipo_accion: accion,
           descripcion: JSON.stringify(parametros),
           exito: resultado.success,
@@ -739,6 +749,10 @@ El usuario ya aprobo esta delegacion. Procede a pedir confirmacion para agregar 
     return <IntegracionesView />
   }
 
+  if (vistaActiva === 'informes') {
+    return <InformesView />
+  }
+
   return (
     <div className="app-layout">
       {/* Header Global */}
@@ -747,7 +761,11 @@ El usuario ya aprobo esta delegacion. Procede a pedir confirmacion para agregar 
           <span className="header-logo">*</span>
           <div className="header-info">
             <h1>Admin Panel</h1>
-            <span className="header-marca">{usuario.nombre_marca}</span>
+            {esSuperAdmin ? (
+              <SelectorMarca />
+            ) : (
+              <span className="header-marca">{usuario.nombre_marca}</span>
+            )}
           </div>
         </div>
         <div className="header-right">
@@ -807,7 +825,7 @@ El usuario ya aprobo esta delegacion. Procede a pedir confirmacion para agregar 
                 onRespuestaRapida={handleRespuestaRapida}
                 onDelegacion={ejecutarDelegacion}
                 onNavegar={navegarA}
-                nombreMarca={usuario.nombre_marca}
+                nombreMarca={marcaActiva?.nombre_marca || usuario.nombre_marca}
                 usuario={usuario}
               />
             ))}
@@ -903,6 +921,15 @@ El usuario ya aprobo esta delegacion. Procede a pedir confirmacion para agregar 
                       <span className="option-texto">Integraciones</span>
                       <span className="option-desc">Facebook/Instagram</span>
                     </button>
+                    <button
+                      type="button"
+                      className="menu-input-option option-informes"
+                      onClick={() => { navegarA('informes'); setMenuInputAbierto(false) }}
+                    >
+                      <span className="option-icon">📊</span>
+                      <span className="option-texto">Informes</span>
+                      <span className="option-desc">Informes Instagram</span>
+                    </button>
                     <div className="menu-input-divider"></div>
                     <button
                       type="button"
@@ -955,6 +982,7 @@ El usuario ya aprobo esta delegacion. Procede a pedir confirmacion para agregar 
             <EditorManual
               usuario={usuario}
               esSuperAdmin={esSuperAdmin}
+              marcaActiva={marcaActiva}
               onDatosActualizados={cargarDatosMarca}
             />
           </div>

@@ -18,6 +18,10 @@ export function AuthProvider({ children }) {
   const [plan, setPlan] = useState('gratuito')
   const [limitesUso, setLimitesUso] = useState(null)
 
+  // Estado de marca activa (super admin)
+  const [marcaActiva, setMarcaActiva] = useState(null)
+  const [marcasDisponibles, setMarcasDisponibles] = useState([])
+
   // Cargar sesión desde localStorage al iniciar
   useEffect(() => {
     const cargarSesion = async () => {
@@ -30,9 +34,18 @@ export function AuthProvider({ children }) {
           try {
             const resultado = await api.verify()
             if (resultado.valid) {
-              setUsuario(JSON.parse(usuarioGuardado))
+              const usr = JSON.parse(usuarioGuardado)
+              setUsuario(usr)
               setToken(tokenGuardado)
               setSesionChatId(localStorage.getItem('sesionChatId') || uuidv4())
+
+              // Restaurar marca activa
+              const marcaGuardada = localStorage.getItem('marcaActiva')
+              if (marcaGuardada) {
+                setMarcaActiva(JSON.parse(marcaGuardada))
+              } else {
+                setMarcaActiva({ id_marca: usr.id_marca, nombre_marca: usr.nombre_marca })
+              }
             } else {
               // Token inválido, limpiar
               limpiarSesion()
@@ -45,9 +58,17 @@ export function AuthProvider({ children }) {
             } else {
               // Error de conexión real, usar datos guardados
               console.warn('Error de conexión, usando datos guardados')
-              setUsuario(JSON.parse(usuarioGuardado))
+              const usr = JSON.parse(usuarioGuardado)
+              setUsuario(usr)
               setToken(tokenGuardado)
               setSesionChatId(localStorage.getItem('sesionChatId') || uuidv4())
+
+              const marcaGuardada = localStorage.getItem('marcaActiva')
+              if (marcaGuardada) {
+                setMarcaActiva(JSON.parse(marcaGuardada))
+              } else {
+                setMarcaActiva({ id_marca: usr.id_marca, nombre_marca: usr.nombre_marca })
+              }
             }
           }
         }
@@ -68,6 +89,7 @@ export function AuthProvider({ children }) {
     localStorage.removeItem('sesionChatId')
     localStorage.removeItem('onboardingCompletado')
     localStorage.removeItem('plan')
+    localStorage.removeItem('marcaActiva')
     setUsuario(null)
     setToken(null)
     setSesionChatId(null)
@@ -75,6 +97,8 @@ export function AuthProvider({ children }) {
     setOnboardingCompletado(null)
     setPlan('gratuito')
     setLimitesUso(null)
+    setMarcaActiva(null)
+    setMarcasDisponibles([])
   }
 
   // Verificar estado de onboarding
@@ -142,12 +166,44 @@ export function AuthProvider({ children }) {
     }
   }, [token])
 
+  // Cargar marcas disponibles para super admin
+  const cargarMarcasDisponibles = useCallback(async () => {
+    if (!token) return
+
+    try {
+      const resultado = await api.getDatosMarca(null, true)
+      if (resultado.success && resultado.data) {
+        // Extraer pares únicos de id_marca + nombre_marca
+        const marcasMap = new Map()
+        resultado.data.forEach(item => {
+          const id = item['ID marca']
+          const nombre = item['Nombre marca']
+          if (id && nombre && !marcasMap.has(id)) {
+            marcasMap.set(id, { id_marca: id, nombre_marca: nombre })
+          }
+        })
+        setMarcasDisponibles(Array.from(marcasMap.values()).sort((a, b) =>
+          a.nombre_marca.localeCompare(b.nombre_marca)
+        ))
+      }
+    } catch (error) {
+      console.error('Error cargando marcas disponibles:', error)
+    }
+  }, [token])
+
   // Verificar onboarding cuando cambia el token
   useEffect(() => {
     if (token && usuario) {
       verificarEstadoOnboarding()
     }
   }, [token, usuario, verificarEstadoOnboarding])
+
+  // Cargar marcas disponibles para super admin
+  useEffect(() => {
+    if (token && usuario?.es_super_admin) {
+      cargarMarcasDisponibles()
+    }
+  }, [token, usuario, cargarMarcasDisponibles])
 
   const login = async (usuarioInput, contrasena) => {
     try {
@@ -167,6 +223,16 @@ export function AuthProvider({ children }) {
 
         setOnboardingCompletado(onboardingState)
         setPlan(planState)
+
+        // Inicializar marca activa (restaurar de localStorage o usar la del usuario)
+        const marcaGuardada = localStorage.getItem('marcaActiva')
+        if (marcaGuardada && resultado.usuario.es_super_admin) {
+          setMarcaActiva(JSON.parse(marcaGuardada))
+        } else {
+          const marca = { id_marca: resultado.usuario.id_marca, nombre_marca: resultado.usuario.nombre_marca }
+          setMarcaActiva(marca)
+          localStorage.setItem('marcaActiva', JSON.stringify(marca))
+        }
 
         localStorage.setItem('token', resultado.token)
         localStorage.setItem('usuario', JSON.stringify(resultado.usuario))
@@ -189,6 +255,11 @@ export function AuthProvider({ children }) {
 
   const logout = () => {
     limpiarSesion()
+  }
+
+  const cambiarMarca = (marca) => {
+    setMarcaActiva(marca)
+    localStorage.setItem('marcaActiva', JSON.stringify(marca))
   }
 
   const reiniciarChat = () => {
@@ -228,6 +299,10 @@ export function AuthProvider({ children }) {
     requiereOnboarding,
     verificarEstadoOnboarding,
     cargarLimites,
+    // Marca activa (super admin)
+    marcaActiva,
+    marcasDisponibles,
+    cambiarMarca,
     // Funciones
     login,
     logout,

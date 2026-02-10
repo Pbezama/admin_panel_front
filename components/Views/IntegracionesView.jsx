@@ -9,7 +9,7 @@ import '@/styles/IntegracionesView.css'
 const FACEBOOK_OAUTH_URL = 'https://www.facebook.com/v17.0/dialog/oauth?client_id=1321111752593392&redirect_uri=https%3A%2F%2Fwww.mrkt21.com%2Fcomentarios%2Ffacebook_callback&scope=public_profile%2Cpages_show_list%2Cbusiness_management%2Cpages_read_engagement%2Cpages_read_user_content%2Cpages_manage_engagement%2Cpages_manage_metadata%2Cpages_messaging%2Cpages_manage_posts%2Cinstagram_basic%2Cinstagram_manage_comments%2Cinstagram_manage_messages&state=5'
 
 export default function IntegracionesView() {
-  const { usuario } = useAuth()
+  const { usuario, marcaActiva } = useAuth()
   const { volverAlChat } = useView()
   const [conectando, setConectando] = useState(false)
   const [conectado, setConectado] = useState(false)
@@ -62,7 +62,7 @@ export default function IntegracionesView() {
           <h1>Integraciones</h1>
         </div>
         <div className="header-right">
-          <span className="marca-nombre">{usuario?.nombre_marca || usuario?.email}</span>
+          <span className="marca-nombre">{marcaActiva?.nombre_marca || usuario?.nombre_marca || usuario?.email}</span>
         </div>
       </header>
 

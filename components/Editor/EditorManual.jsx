@@ -19,7 +19,7 @@ const CATEGORIAS_OPCIONES = [
   { value: 'servicio', label: 'Servicios' }
 ]
 
-const EditorManual = ({ usuario, esSuperAdmin, onDatosActualizados }) => {
+const EditorManual = ({ usuario, esSuperAdmin, marcaActiva, onDatosActualizados }) => {
   const [datos, setDatos] = useState([])
   const [cargando, setCargando] = useState(true)
   const [filtroCategoria, setFiltroCategoria] = useState('todas')
@@ -51,12 +51,13 @@ const EditorManual = ({ usuario, esSuperAdmin, onDatosActualizados }) => {
 
   useEffect(() => {
     cargarDatos()
-  }, [usuario])
+  }, [usuario, marcaActiva?.id_marca])
 
   const cargarDatos = async () => {
     setCargando(true)
     try {
-      const resultado = await api.getDatosMarca(usuario?.id_marca, esSuperAdmin)
+      const idMarcaCargar = marcaActiva?.id_marca || usuario?.id_marca
+      const resultado = await api.getDatosMarca(idMarcaCargar, false)
       if (resultado.success) {
         setDatos(resultado.data || [])
       }
@@ -70,8 +71,9 @@ const EditorManual = ({ usuario, esSuperAdmin, onDatosActualizados }) => {
   const cargarComentarios = async () => {
     setCargandoComentarios(true)
     try {
+      const idMarcaCargar = marcaActiva?.id_marca || usuario?.id_marca
       const resultado = await api.getComments(
-        esSuperAdmin ? null : usuario?.id_marca,
+        idMarcaCargar,
         500
       )
       if (resultado.success) {
@@ -240,8 +242,8 @@ const EditorManual = ({ usuario, esSuperAdmin, onDatosActualizados }) => {
     setGuardando(true)
     try {
       const resultado = await api.addDato({
-        'ID marca': usuario?.id_marca,
-        'Nombre marca': usuario?.nombre_marca,
+        'ID marca': marcaActiva?.id_marca || usuario?.id_marca,
+        'Nombre marca': marcaActiva?.nombre_marca || usuario?.nombre_marca,
         categoria: formNuevo.categoria,
         clave: formNuevo.clave,
         valor: formNuevo.valor,
@@ -349,10 +351,10 @@ const EditorManual = ({ usuario, esSuperAdmin, onDatosActualizados }) => {
                   'Mensaje Inbox': 'mensaje_inbox',
                   'Fecha': 'creado_en'
                 }}
-                nombreArchivo={`comentarios_${usuario?.nombre_marca}`}
-                titulo={`Comentarios - ${usuario?.nombre_marca}`}
+                nombreArchivo={`comentarios_${marcaActiva?.nombre_marca || usuario?.nombre_marca}`}
+                titulo={`Comentarios - ${marcaActiva?.nombre_marca || usuario?.nombre_marca}`}
                 tipo="comentarios"
-                nombreMarca={usuario?.nombre_marca}
+                nombreMarca={marcaActiva?.nombre_marca || usuario?.nombre_marca}
                 campoFecha="creado_en"
               />
               <button className="btn-refresh" onClick={cargarComentarios} title="Actualizar">
@@ -737,10 +739,10 @@ const EditorManual = ({ usuario, esSuperAdmin, onDatosActualizados }) => {
                 'Fecha Inicio': 'fecha_inicio',
                 'Fecha Termino': 'fecha_caducidad'
               }}
-              nombreArchivo={`datos_${usuario?.nombre_marca}`}
-              titulo={`Datos de Marca - ${usuario?.nombre_marca}`}
+              nombreArchivo={`datos_${marcaActiva?.nombre_marca || usuario?.nombre_marca}`}
+              titulo={`Datos de Marca - ${marcaActiva?.nombre_marca || usuario?.nombre_marca}`}
               tipo="datos"
-              nombreMarca={usuario?.nombre_marca}
+              nombreMarca={marcaActiva?.nombre_marca || usuario?.nombre_marca}
               campoFecha="fecha_inicio"
             />
           </div>

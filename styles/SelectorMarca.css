@@ -1,0 +1,131 @@
+/**
+ * SelectorMarca.css - Estilos para el selector de marca (super admin)
+ */
+
+.selector-marca {
+  display: flex;
+  align-items: center;
+}
+
+.selector-marca-dropdown {
+  padding: 6px 12px;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  background: #f8fafc;
+  color: #1e293b;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  outline: none;
+  transition: all 0.2s;
+  max-width: 200px;
+}
+
+.selector-marca-dropdown:hover {
+  border-color: #3b5998;
+  background: #f0f4ff;
+}
+
+.selector-marca-dropdown:focus {
+  border-color: #3b5998;
+  box-shadow: 0 0 0 2px rgba(59, 89, 152, 0.15);
+}
+
+/* Popup de confirmacion */
+.confirmacion-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  animation: fadeIn 0.15s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.confirmacion-modal {
+  background: #fff;
+  border-radius: 14px;
+  padding: 28px 32px;
+  max-width: 400px;
+  width: 90%;
+  text-align: center;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
+  animation: scaleIn 0.2s ease;
+}
+
+@keyframes scaleIn {
+  from { transform: scale(0.95); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}
+
+.confirmacion-icono {
+  font-size: 2.5rem;
+  margin-bottom: 8px;
+}
+
+.confirmacion-modal h3 {
+  margin: 0 0 12px;
+  font-size: 1.2rem;
+  color: #1e293b;
+}
+
+.confirmacion-modal p {
+  margin: 0 0 8px;
+  color: #475569;
+  font-size: 0.95rem;
+  line-height: 1.5;
+}
+
+.confirmacion-advertencia {
+  color: #dc2626 !important;
+  font-weight: 500;
+  font-size: 0.85rem !important;
+}
+
+.confirmacion-acciones {
+  display: flex;
+  gap: 12px;
+  margin-top: 20px;
+  justify-content: center;
+}
+
+.confirmacion-acciones .btn-cancelar {
+  padding: 10px 24px;
+  background: #f1f5f9;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  color: #64748b;
+  transition: all 0.2s;
+}
+
+.confirmacion-acciones .btn-cancelar:hover {
+  background: #e2e8f0;
+}
+
+.confirmacion-acciones .btn-confirmar {
+  padding: 10px 24px;
+  background: #3b5998;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  transition: all 0.2s;
+}
+
+.confirmacion-acciones .btn-confirmar:hover {
+  background: #2d4373;
+}
