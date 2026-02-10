@@ -14,10 +14,10 @@ const SelectorMarca = () => {
   }
 
   const handleSeleccion = (e) => {
-    const idSeleccionado = parseInt(e.target.value)
-    if (idSeleccionado === marcaActiva.id_marca) return
+    const idSeleccionado = e.target.value
+    if (String(idSeleccionado) === String(marcaActiva.id_marca)) return
 
-    const marca = marcasDisponibles.find(m => m.id_marca === idSeleccionado)
+    const marca = marcasDisponibles.find(m => String(m.id_marca) === String(idSeleccionado))
     if (marca) {
       setMarcaPendiente(marca)
       setMostrarConfirmacion(true)

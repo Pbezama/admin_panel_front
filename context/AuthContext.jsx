@@ -166,25 +166,18 @@ export function AuthProvider({ children }) {
     }
   }, [token])
 
-  // Cargar marcas disponibles para super admin
+  // Cargar marcas disponibles para super admin (desde cuentas_instagram)
   const cargarMarcasDisponibles = useCallback(async () => {
     if (!token) return
 
     try {
-      const resultado = await api.getDatosMarca(null, true)
+      const resultado = await api.getMarcasInstagram()
       if (resultado.success && resultado.data) {
-        // Extraer pares únicos de id_marca + nombre_marca
-        const marcasMap = new Map()
-        resultado.data.forEach(item => {
-          const id = item['ID marca']
-          const nombre = item['Nombre marca']
-          if (id && nombre && !marcasMap.has(id)) {
-            marcasMap.set(id, { id_marca: id, nombre_marca: nombre })
-          }
-        })
-        setMarcasDisponibles(Array.from(marcasMap.values()).sort((a, b) =>
-          a.nombre_marca.localeCompare(b.nombre_marca)
-        ))
+        setMarcasDisponibles(resultado.data.map(item => ({
+          id_marca: item.id_marca,
+          nombre_marca: item.instagram_name || item.page_name || `Marca ${item.id_marca}`,
+          instagram_id: item.instagram_id
+        })))
       }
     } catch (error) {
       console.error('Error cargando marcas disponibles:', error)
@@ -260,6 +253,8 @@ export function AuthProvider({ children }) {
   const cambiarMarca = (marca) => {
     setMarcaActiva(marca)
     localStorage.setItem('marcaActiva', JSON.stringify(marca))
+    // Recargar para que toda la app use la nueva marca
+    window.location.reload()
   }
 
   const reiniciarChat = () => {
