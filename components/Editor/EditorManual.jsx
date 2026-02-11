@@ -5,6 +5,23 @@ import { api } from '@/lib/api'
 import MenuDescarga from './MenuDescarga'
 import '@/styles/EditorManual.css'
 
+// Categorias del conocimiento de marca (Entrenador IA)
+const CATEGORIAS_CONOCIMIENTO = {
+  identidad: { label: 'Identidad', color: '#6366f1' },
+  productos: { label: 'Productos', color: '#f59e0b' },
+  servicios: { label: 'Servicios', color: '#10b981' },
+  precios: { label: 'Precios', color: '#ef4444' },
+  publico_objetivo: { label: 'Publico Objetivo', color: '#8b5cf6' },
+  tono_voz: { label: 'Tono de Voz', color: '#ec4899' },
+  competencia: { label: 'Competencia', color: '#f97316' },
+  promociones: { label: 'Promociones', color: '#14b8a6' },
+  horarios: { label: 'Horarios', color: '#06b6d4' },
+  politicas: { label: 'Politicas', color: '#64748b' },
+  contenido: { label: 'Contenido', color: '#a855f7' },
+  faq: { label: 'FAQ', color: '#3b82f6' },
+  otro: { label: 'Otro', color: '#78716c' }
+}
+
 // Categorias predefinidas para el desplegable
 const CATEGORIAS_OPCIONES = [
   { value: 'prompt', label: 'Prompt Principal' },
@@ -38,6 +55,13 @@ const EditorManual = ({ usuario, esSuperAdmin, marcaActiva, onDatosActualizados 
   const [guardando, setGuardando] = useState(false)
   const [mensaje, setMensaje] = useState(null)
 
+  // Estado para conocimiento de marca
+  const [conocimiento, setConocimiento] = useState([])
+  const [cargandoConocimiento, setCargandoConocimiento] = useState(false)
+  const [filtroConocimientoCategoria, setFiltroConocimientoCategoria] = useState('')
+  const [busquedaConocimiento, setBusquedaConocimiento] = useState('')
+  const [expandidosConocimiento, setExpandidosConocimiento] = useState({})
+
   // Estado para comentarios
   const [vistaActiva, setVistaActiva] = useState('datos')
   const [comentarios, setComentarios] = useState([])
@@ -66,6 +90,40 @@ const EditorManual = ({ usuario, esSuperAdmin, marcaActiva, onDatosActualizados 
     }
     setCargando(false)
   }
+
+  // Cargar conocimiento de marca
+  const cargarConocimiento = async () => {
+    setCargandoConocimiento(true)
+    try {
+      const result = await api.getConocimientoEntrenador()
+      if (result.success) {
+        setConocimiento(result.conocimiento || [])
+      }
+    } catch (error) {
+      console.error('Error al cargar conocimiento:', error)
+    }
+    setCargandoConocimiento(false)
+  }
+
+  // Filtrar conocimiento aprobado/editado
+  const conocimientoAprobado = useMemo(() => {
+    let items = conocimiento.filter(k => k.estado === 'aprobado' || k.estado === 'editado')
+
+    if (filtroConocimientoCategoria) {
+      items = items.filter(k => k.categoria === filtroConocimientoCategoria)
+    }
+
+    if (busquedaConocimiento) {
+      const busq = busquedaConocimiento.toLowerCase()
+      items = items.filter(k =>
+        (k.titulo || '').toLowerCase().includes(busq) ||
+        (k.contenido || '').toLowerCase().includes(busq) ||
+        (k.categoria || '').toLowerCase().includes(busq)
+      )
+    }
+
+    return items
+  }, [conocimiento, filtroConocimientoCategoria, busquedaConocimiento])
 
   // Cargar comentarios
   const cargarComentarios = async () => {
@@ -156,6 +214,13 @@ const EditorManual = ({ usuario, esSuperAdmin, marcaActiva, onDatosActualizados 
     if (ordenColumna !== columna) return ''
     return ordenDireccion === 'asc' ? ' ^' : ' v'
   }
+
+  // Cargar conocimiento cuando se cambia a esa vista
+  useEffect(() => {
+    if (vistaActiva === 'conocimiento' && conocimiento.length === 0) {
+      cargarConocimiento()
+    }
+  }, [vistaActiva])
 
   // Cargar comentarios cuando se cambia a esa vista
   useEffect(() => {
@@ -320,6 +385,15 @@ const EditorManual = ({ usuario, esSuperAdmin, marcaActiva, onDatosActualizados 
           Datos de Marca
         </button>
         <button
+          className={`tab-btn ${vistaActiva === 'conocimiento' ? 'active' : ''}`}
+          onClick={() => setVistaActiva('conocimiento')}
+        >
+          Conocimiento IA
+          {conocimientoAprobado.length > 0 && (
+            <span className="tab-badge-conocimiento">{conocimientoAprobado.length}</span>
+          )}
+        </button>
+        <button
           className={`tab-btn ${vistaActiva === 'comentarios' ? 'active' : ''}`}
           onClick={() => setVistaActiva('comentarios')}
         >
@@ -331,6 +405,93 @@ const EditorManual = ({ usuario, esSuperAdmin, marcaActiva, onDatosActualizados 
       {mensaje && (
         <div className={`editor-mensaje ${mensaje.tipo}`}>
           {mensaje.texto}
+        </div>
+      )}
+
+      {/* VISTA DE CONOCIMIENTO DE MARCA */}
+      {vistaActiva === 'conocimiento' && (
+        <div className="conocimiento-section">
+          <div className="conocimiento-header-editor">
+            <span>{conocimientoAprobado.length} conocimientos aprobados</span>
+            <button className="btn-refresh" onClick={cargarConocimiento} title="Actualizar">
+              R
+            </button>
+          </div>
+
+          <div className="conocimiento-filtros-editor">
+            <div className="filtro-busqueda">
+              <input
+                type="text"
+                placeholder="Buscar en conocimiento..."
+                value={busquedaConocimiento}
+                onChange={(e) => setBusquedaConocimiento(e.target.value)}
+              />
+            </div>
+            <select
+              className="filtro-categoria-conocimiento"
+              value={filtroConocimientoCategoria}
+              onChange={(e) => setFiltroConocimientoCategoria(e.target.value)}
+            >
+              <option value="">Todas las categorias</option>
+              {Object.entries(CATEGORIAS_CONOCIMIENTO).map(([key, val]) => (
+                <option key={key} value={key}>{val.label}</option>
+              ))}
+            </select>
+          </div>
+
+          {cargandoConocimiento ? (
+            <div className="editor-loading">Cargando conocimiento...</div>
+          ) : conocimientoAprobado.length === 0 ? (
+            <div className="editor-empty">
+              No hay conocimiento aprobado. Entrena tu marca desde el Entrenador IA.
+            </div>
+          ) : (
+            <div className="conocimiento-lista-editor">
+              {Object.entries(CATEGORIAS_CONOCIMIENTO).map(([catKey, catInfo]) => {
+                const items = conocimientoAprobado.filter(k => k.categoria === catKey)
+                if (items.length === 0) return null
+                return (
+                  <div key={catKey} className="conocimiento-grupo-editor">
+                    <div
+                      className="conocimiento-grupo-header"
+                      style={{ borderLeftColor: catInfo.color }}
+                    >
+                      <span
+                        className="conocimiento-cat-dot"
+                        style={{ background: catInfo.color }}
+                      ></span>
+                      <span className="conocimiento-cat-label">{catInfo.label}</span>
+                      <span className="conocimiento-cat-count">{items.length}</span>
+                    </div>
+                    {items.map(item => (
+                      <div
+                        key={item.id}
+                        className="conocimiento-item-editor"
+                        onClick={() => setExpandidosConocimiento(prev => ({
+                          ...prev, [item.id]: !prev[item.id]
+                        }))}
+                      >
+                        <div className="item-titulo-row">
+                          <span className="item-titulo">{item.titulo}</span>
+                          <span
+                            className="item-confianza"
+                            style={{ color: item.confianza >= 80 ? '#10b981' : item.confianza >= 50 ? '#f59e0b' : '#ef4444' }}
+                          >
+                            {item.confianza}%
+                          </span>
+                        </div>
+                        {expandidosConocimiento[item.id] && (
+                          <div className="item-contenido-expanded">
+                            {item.contenido}
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )
+              })}
+            </div>
+          )}
         </div>
       )}
 

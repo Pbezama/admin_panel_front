@@ -11,6 +11,7 @@ import MetaAdsView from '@/components/Views/MetaAdsView'
 import TareasView from '@/components/Views/TareasView'
 import IntegracionesView from '@/components/Views/IntegracionesView'
 import InformesView from '@/components/Views/InformesView'
+import EntrenadorView from '@/components/Views/EntrenadorView'
 import NotificacionesCampana from '@/components/NotificacionesCampana'
 import SelectorMarca from '@/components/SelectorMarca'
 import '@/styles/Chat.css'
@@ -753,6 +754,10 @@ El usuario ya aprobo esta delegacion. Procede a pedir confirmacion para agregar 
     return <InformesView />
   }
 
+  if (vistaActiva === 'entrenador') {
+    return <EntrenadorView />
+  }
+
   return (
     <div className="app-layout">
       {/* Header Global */}
@@ -929,6 +934,15 @@ El usuario ya aprobo esta delegacion. Procede a pedir confirmacion para agregar 
                       <span className="option-icon">📊</span>
                       <span className="option-texto">Informes</span>
                       <span className="option-desc">Informes Instagram</span>
+                    </button>
+                    <button
+                      type="button"
+                      className="menu-input-option option-entrenador"
+                      onClick={() => { navegarA('entrenador'); setMenuInputAbierto(false) }}
+                    >
+                      <span className="option-icon">🧠</span>
+                      <span className="option-texto">Entrenador</span>
+                      <span className="option-desc">Entrenar IA de marca</span>
                     </button>
                     <div className="menu-input-divider"></div>
                     <button
