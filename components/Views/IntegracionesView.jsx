@@ -1,8 +1,9 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { useAuth } from '@/context/AuthContext'
 import { useView } from '@/context/ViewContext'
+import { api } from '@/lib/api'
 import '@/styles/IntegracionesView.css'
 
 // URL directa de OAuth de Facebook
@@ -13,14 +14,43 @@ export default function IntegracionesView() {
   const { volverAlChat } = useView()
   const [conectando, setConectando] = useState(false)
   const [conectado, setConectado] = useState(false)
+  const [gcalStatus, setGcalStatus] = useState({ connected: false, email: null, loading: true })
+  const [gcalConectando, setGcalConectando] = useState(false)
   const popupIntervalRef = useRef(null)
+  const gcalPopupRef = useRef(null)
+
+  // Cargar estado de Google Calendar
+  const cargarGcalStatus = useCallback(async () => {
+    try {
+      const result = await api.getGoogleCalendarStatus()
+      if (result.success) {
+        setGcalStatus({ connected: result.connected, email: result.email, loading: false })
+      }
+    } catch {
+      setGcalStatus(prev => ({ ...prev, loading: false }))
+    }
+  }, [])
+
+  useEffect(() => {
+    cargarGcalStatus()
+  }, [cargarGcalStatus])
+
+  // Detectar retorno de OAuth Google Calendar
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    const gcalResult = params.get('google_calendar')
+    if (gcalResult === 'success') {
+      setGcalStatus({ connected: true, email: null, loading: false })
+      cargarGcalStatus()
+      window.history.replaceState({}, '', window.location.pathname)
+    }
+  }, [cargarGcalStatus])
 
   // Limpiar intervalo al desmontar
   useEffect(() => {
     return () => {
-      if (popupIntervalRef.current) {
-        clearInterval(popupIntervalRef.current)
-      }
+      if (popupIntervalRef.current) clearInterval(popupIntervalRef.current)
+      if (gcalPopupRef.current) clearInterval(gcalPopupRef.current)
     }
   }, [])
 
@@ -118,16 +148,96 @@ export default function IntegracionesView() {
           </div>
         </section>
 
+        <section className="integracion-seccion">
+          <div className="seccion-header">
+            <div className="seccion-icon" style={{ background: '#4285f4', color: '#fff', fontSize: '18px' }}>📅</div>
+            <div className="seccion-info">
+              <h2>Google Calendar</h2>
+              <p>Conecta tu calendario para agendar citas desde flujos</p>
+            </div>
+          </div>
+
+          <div className="conexion-acciones">
+            {gcalStatus.loading ? (
+              <div style={{ color: '#94a3b8', fontSize: '13px' }}>Cargando...</div>
+            ) : gcalStatus.connected ? (
+              <div className="conexion-exitosa">
+                <div className="exito-icon">✓</div>
+                <span>Calendar conectado{gcalStatus.email ? ` (${gcalStatus.email})` : ''}</span>
+                <button
+                  onClick={async () => {
+                    try {
+                      await api.disconnectGoogleCalendar()
+                      setGcalStatus({ connected: false, email: null, loading: false })
+                    } catch {}
+                  }}
+                  className="btn-conectar-otra"
+                >
+                  Desconectar
+                </button>
+              </div>
+            ) : (
+              <button
+                onClick={async () => {
+                  setGcalConectando(true)
+                  try {
+                    const result = await api.getGoogleAuthUrl(window.location.origin + window.location.pathname)
+                    if (result.success && result.url) {
+                      const width = 600, height = 700
+                      const left = (window.innerWidth - width) / 2 + window.screenX
+                      const top = (window.innerHeight - height) / 2 + window.screenY
+                      const popup = window.open(result.url, 'google_oauth', `width=${width},height=${height},left=${left},top=${top}`)
+                      gcalPopupRef.current = setInterval(() => {
+                        if (!popup || popup.closed) {
+                          clearInterval(gcalPopupRef.current)
+                          gcalPopupRef.current = null
+                          setGcalConectando(false)
+                          cargarGcalStatus()
+                        }
+                      }, 500)
+                    }
+                  } catch {
+                    setGcalConectando(false)
+                  }
+                }}
+                disabled={gcalConectando}
+                className={`btn-conectar ${gcalConectando ? 'conectando' : ''}`}
+              >
+                {gcalConectando ? (
+                  <>
+                    <div className="spinner-small"></div>
+                    <span>Conectando...</span>
+                  </>
+                ) : (
+                  <>
+                    <span className="btn-icon">📅</span>
+                    <span>Conectar Google Calendar</span>
+                  </>
+                )}
+              </button>
+            )}
+          </div>
+
+          <div className="info-box">
+            <h4>Como funciona</h4>
+            <ul>
+              <li>Al conectar Google Calendar, los flujos podran crear citas automaticamente</li>
+              <li>Usa el nodo "Agendar Cita" en el builder de flujos</li>
+              <li>Las citas se crean en tu calendario con los datos del cliente</li>
+            </ul>
+          </div>
+        </section>
+
         <section className="integracion-seccion disabled">
           <div className="seccion-header">
             <div className="seccion-icon whatsapp-icon">W</div>
             <div className="seccion-info">
               <h2>WhatsApp Business</h2>
-              <p>Proximamente</p>
+              <p>Configurado via variables de entorno</p>
             </div>
           </div>
           <div className="coming-soon">
-            <span>Proximamente</span>
+            <span>Configurado</span>
           </div>
         </section>
       </main>

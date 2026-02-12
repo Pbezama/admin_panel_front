@@ -12,8 +12,10 @@ import TareasView from '@/components/Views/TareasView'
 import IntegracionesView from '@/components/Views/IntegracionesView'
 import InformesView from '@/components/Views/InformesView'
 import EntrenadorView from '@/components/Views/EntrenadorView'
-import NotificacionesCampana from '@/components/NotificacionesCampana'
-import SelectorMarca from '@/components/SelectorMarca'
+import FlujosView from '@/components/Views/FlujosView'
+import DashboardLiveView from '@/components/Views/DashboardLiveView'
+import DashboardLayout from '@/components/DashboardLayout'
+import { RotateCcw, Send, ChevronDown, ChevronUp, Database, Sparkles, PanelRightOpen, PanelRightClose } from 'lucide-react'
 import '@/styles/Chat.css'
 
 export default function ChatPage() {
@@ -25,7 +27,7 @@ export default function ChatPage() {
   const [mostrarEditor, setMostrarEditor] = useState(true)
   const [modoActivo, setModoActivo] = useState('controlador')
   const [vistaMobile, setVistaMobile] = useState('chat')
-  const [menuInputAbierto, setMenuInputAbierto] = useState(false)
+  const [menuModoAbierto, setMenuModoAbierto] = useState(false)
   const [anchoChat, setAnchoChat] = useState(60)
   const [arrastrando, setArrastrando] = useState(false)
 
@@ -34,25 +36,22 @@ export default function ChatPage() {
   const router = useRouter()
   const chatEndRef = useRef(null)
   const inputRef = useRef(null)
-  const menuInputRef = useRef(null)
+  const menuModoRef = useRef(null)
 
-  // Redirigir si no esta logueado o si no completó onboarding
+  // Redirigir si no esta logueado o si no completo onboarding
   useEffect(() => {
     if (!loading && !usuario) {
       router.push('/login')
       return
     }
 
-    // Si no ha completado onboarding, redirigir
     if (!loading && usuario && onboardingCompletado === false) {
       router.push('/onboarding')
       return
     }
 
-    // Solo cargar datos cuando loading termine y tengamos usuario
     if (!loading && usuario && onboardingCompletado !== false) {
       cargarDatosMarca()
-      // Si es colaborador, redirigir a vista de tareas
       if (esColaborador) {
         navegarA('tareas')
       } else {
@@ -61,27 +60,26 @@ export default function ChatPage() {
     }
   }, [usuario, loading, router, esColaborador, onboardingCompletado])
 
-  // Scroll al final cuando hay nuevos mensajes
   useEffect(() => {
     scrollToBottom()
   }, [mensajes])
 
-  // Cerrar menu al hacer clic fuera
+  // Cerrar menu modo al hacer clic fuera
   useEffect(() => {
     const handleClickOutside = (event) => {
-      if (menuInputRef.current && !menuInputRef.current.contains(event.target)) {
-        setMenuInputAbierto(false)
+      if (menuModoRef.current && !menuModoRef.current.contains(event.target)) {
+        setMenuModoAbierto(false)
       }
     }
 
-    if (menuInputAbierto) {
+    if (menuModoAbierto) {
       document.addEventListener('mousedown', handleClickOutside)
     }
 
     return () => {
       document.removeEventListener('mousedown', handleClickOutside)
     }
-  }, [menuInputAbierto])
+  }, [menuModoAbierto])
 
   // Logica de arrastre para el divisor redimensionable
   useEffect(() => {
@@ -122,16 +120,14 @@ export default function ChatPage() {
       }
     } catch (error) {
       console.error('Error al cargar datos:', error)
-      // Si es error de autenticación, redirigir a login
       if (error?.status === 401 || error?.status === 403) {
-        console.warn('Token inválido en cargarDatosMarca, redirigiendo a login')
+        console.warn('Token invalido en cargarDatosMarca, redirigiendo a login')
         logout()
         router.push('/login')
       }
     }
   }
 
-  // Recargar datos cuando cambia la marca activa (super admin)
   useEffect(() => {
     if (marcaActiva && usuario && !loading) {
       cargarDatosMarca()
@@ -154,7 +150,6 @@ export default function ChatPage() {
     setMensajes([mensajeBienvenida])
   }
 
-  // Cambiar entre modos
   const cambiarModo = (nuevoModo) => {
     if (nuevoModo === modoActivo) return
 
@@ -179,7 +174,6 @@ export default function ChatPage() {
     cambiarModo(modoActivo === 'chatia' ? 'controlador' : 'chatia')
   }
 
-  // Ejecutar delegacion automatica
   const ejecutarDelegacion = async (delegacion) => {
     const { agenteDestino, datosParaDelegar, razon } = delegacion
 
@@ -208,7 +202,6 @@ export default function ChatPage() {
     }
   }
 
-  // Enviar mensaje con contexto de delegacion
   const enviarMensajeConContextoDelegado = async (datos, razon) => {
     setEnviando(true)
 
@@ -293,12 +286,10 @@ El usuario ya aprobo esta delegacion. Procede a pedir confirmacion para agregar 
     setEnviando(false)
   }
 
-  // Cambiar vista en movil
   const cambiarVistaMobile = (vista) => {
     setVistaMobile(vista)
   }
 
-  // Enviar mensaje
   const handleEnviarMensaje = async (e) => {
     e.preventDefault()
 
@@ -329,7 +320,6 @@ El usuario ya aprobo esta delegacion. Procede a pedir confirmacion para agregar 
     }
     setMensajes(prev => [...prev, mensajeUsuario])
 
-    // Guardar en backend
     try {
       await api.saveChatMessage({
         usuario_id: usuario?.id,
@@ -372,7 +362,6 @@ El usuario ya aprobo esta delegacion. Procede a pedir confirmacion para agregar 
         respuesta = await api.chatControlador(textoMensaje, contexto)
       }
 
-      // Modo ChatIA
       if (modoParaProcesar === 'chatia') {
         const mensajeRespuesta = {
           rol: 'assistant',
@@ -390,7 +379,6 @@ El usuario ya aprobo esta delegacion. Procede a pedir confirmacion para agregar 
         return
       }
 
-      // Navegacion a vistas de agentes
       if (respuesta.tipo === 'navegacion') {
         const mensajeNavegacion = {
           rol: 'assistant',
@@ -405,7 +393,6 @@ El usuario ya aprobo esta delegacion. Procede a pedir confirmacion para agregar 
         return
       }
 
-      // Consulta de comentarios
       if (respuesta.tipo === 'consultar_comentarios') {
         try {
           const filtros = {
@@ -455,7 +442,6 @@ El usuario ya aprobo esta delegacion. Procede a pedir confirmacion para agregar 
         return
       }
 
-      // Crear tarea
       if (respuesta.tipo === 'crear_tarea' && respuesta.tarea) {
         try {
           const resultado = await api.crearTarea({
@@ -493,13 +479,11 @@ El usuario ya aprobo esta delegacion. Procede a pedir confirmacion para agregar 
         return
       }
 
-      // Accion confirmada con ejecutar
       if (respuesta.tipo === 'accion_confirmada' && respuesta.ejecutar) {
         await ejecutarAccion(respuesta.ejecutar)
         return
       }
 
-      // Accion confirmada sin ejecutar pero con accion pendiente
       if (respuesta.tipo === 'accion_confirmada' && !respuesta.ejecutar && accionPendiente) {
         await ejecutarAccion({
           accion: accionPendiente.accion,
@@ -508,7 +492,6 @@ El usuario ya aprobo esta delegacion. Procede a pedir confirmacion para agregar 
         return
       }
 
-      // Confirmacion pendiente
       if (respuesta.tipo === 'confirmacion' && respuesta.accionPendiente) {
         setAccionPendiente(respuesta.accionPendiente)
       } else if (respuesta.tipo !== 'confirmacion' && respuesta.tipo !== 'accion_confirmada') {
@@ -517,7 +500,6 @@ El usuario ya aprobo esta delegacion. Procede a pedir confirmacion para agregar 
         }
       }
 
-      // Agregar respuesta al chat
       const mensajeRespuesta = {
         rol: 'assistant',
         contenido: respuesta.contenido,
@@ -544,7 +526,6 @@ El usuario ya aprobo esta delegacion. Procede a pedir confirmacion para agregar 
     inputRef.current?.focus()
   }
 
-  // Ejecutar acciones en backend
   const ejecutarAccion = async (ejecutar) => {
     const { accion, parametros } = ejecutar
 
@@ -583,7 +564,6 @@ El usuario ya aprobo esta delegacion. Procede a pedir confirmacion para agregar 
           resultado = { success: false, error: `Accion no reconocida: ${accion}` }
       }
 
-      // Guardar log
       try {
         await api.saveLogAction({
           usuario_id: usuario?.id,
@@ -667,11 +647,6 @@ El usuario ya aprobo esta delegacion. Procede a pedir confirmacion para agregar 
     agregarMensajeBienvenida()
   }
 
-  const handleLogout = () => {
-    logout()
-    router.push('/login')
-  }
-
   const handleKeyDown = (e) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault()
@@ -737,67 +712,30 @@ El usuario ya aprobo esta delegacion. Procede a pedir confirmacion para agregar 
     return null
   }
 
-  // Si estamos en una vista de agente, mostrarla
-  if (vistaActiva === 'meta-ads') {
-    return <MetaAdsView contexto={contextoVista} />
+  // Renderizar contenido segun vista activa
+  const renderVistaActiva = () => {
+    switch (vistaActiva) {
+      case 'meta-ads':
+        return <MetaAdsView contexto={contextoVista} />
+      case 'tareas':
+        return <TareasView />
+      case 'integraciones':
+        return <IntegracionesView />
+      case 'informes':
+        return <InformesView />
+      case 'entrenador':
+        return <EntrenadorView />
+      case 'flujos':
+        return <FlujosView />
+      case 'dashboard-live':
+        return <DashboardLiveView />
+      default:
+        return renderChat()
+    }
   }
 
-  if (vistaActiva === 'tareas') {
-    return <TareasView />
-  }
-
-  if (vistaActiva === 'integraciones') {
-    return <IntegracionesView />
-  }
-
-  if (vistaActiva === 'informes') {
-    return <InformesView />
-  }
-
-  if (vistaActiva === 'entrenador') {
-    return <EntrenadorView />
-  }
-
-  return (
+  const renderChat = () => (
     <div className="app-layout">
-      {/* Header Global */}
-      <header className="chat-header">
-        <div className="header-left">
-          <span className="header-logo">*</span>
-          <div className="header-info">
-            <h1>Admin Panel</h1>
-            {esSuperAdmin ? (
-              <SelectorMarca />
-            ) : (
-              <span className="header-marca">{usuario.nombre_marca}</span>
-            )}
-          </div>
-        </div>
-        <div className="header-right">
-          <div className="user-info">
-            <span className="user-name">{usuario.nombre}</span>
-            {esSuperAdmin && <span className="badge-admin">Super Admin</span>}
-          </div>
-          <NotificacionesCampana onNavegar={navegarA} esAdmin={!esColaborador} />
-          {modoActivo === 'chatia' && (
-            <span className="badge-modo-chat badge-chatia">* Modo ChatIA</span>
-          )}
-          <button
-            onClick={() => setMostrarEditor(!mostrarEditor)}
-            className={`btn-icon btn-toggle-editor desktop-only ${mostrarEditor ? 'active' : ''}`}
-            title={mostrarEditor ? 'Ocultar editor' : 'Mostrar editor'}
-          >
-            =
-          </button>
-          <button onClick={handleReiniciarChat} className="btn-icon" title="Reiniciar chat">
-            R
-          </button>
-          <button onClick={handleLogout} className="btn-icon btn-logout" title="Cerrar sesion">
-            X
-          </button>
-        </div>
-      </header>
-
       {/* Layout principal dividido */}
       <div className={`main-layout ${arrastrando ? 'arrastrando' : ''}`}>
         {/* Panel izquierdo: Chat */}
@@ -805,6 +743,30 @@ El usuario ya aprobo esta delegacion. Procede a pedir confirmacion para agregar 
           className={`chat-panel ${!mostrarEditor ? 'full-width' : ''} mobile-panel ${vistaMobile === 'chat' ? 'mobile-visible' : 'mobile-hidden'}`}
           style={mostrarEditor ? { flex: `0 0 ${anchoChat}%`, maxWidth: `${anchoChat}%` } : undefined}
         >
+          {/* Barra de herramientas del chat */}
+          <div className="chat-toolbar">
+            <div className="chat-toolbar-left">
+              {modoActivo === 'chatia' && (
+                <span className="chat-toolbar-badge badge-chatia">Modo ChatIA</span>
+              )}
+              {modoActivo === 'controlador' && (
+                <span className="chat-toolbar-badge badge-controlador">Modo Controlador</span>
+              )}
+            </div>
+            <div className="chat-toolbar-right">
+              <button
+                onClick={() => setMostrarEditor(!mostrarEditor)}
+                className="chat-toolbar-btn desktop-only"
+                title={mostrarEditor ? 'Ocultar editor' : 'Mostrar editor'}
+              >
+                {mostrarEditor ? <PanelRightClose size={16} /> : <PanelRightOpen size={16} />}
+              </button>
+              <button onClick={handleReiniciarChat} className="chat-toolbar-btn" title="Reiniciar chat">
+                <RotateCcw size={16} />
+              </button>
+            </div>
+          </div>
+
           {/* Indicador de accion pendiente */}
           {modoActivo === 'controlador' && accionPendiente && (
             <div className="accion-pendiente-indicator">
@@ -855,34 +817,35 @@ El usuario ya aprobo esta delegacion. Procede a pedir confirmacion para agregar 
               {20 - mensajesCount} mensajes restantes
             </div>
             <form onSubmit={handleEnviarMensaje} className="chat-input-form">
-              {/* Menu desplegable de opciones */}
-              <div className="menu-input-wrapper" ref={menuInputRef}>
+              {/* Selector de modo (solo Controlador/ChatIA) */}
+              <div className="menu-input-wrapper" ref={menuModoRef}>
                 <button
                   type="button"
                   className={`btn-menu-input modo-${modoActivo}`}
-                  onClick={() => setMenuInputAbierto(!menuInputAbierto)}
-                  aria-expanded={menuInputAbierto}
+                  onClick={() => setMenuModoAbierto(!menuModoAbierto)}
+                  aria-expanded={menuModoAbierto}
                   aria-haspopup="true"
                 >
                   <span className="menu-input-icon">
-                    {modoActivo === 'controlador' ? '*' : '#'}
+                    {modoActivo === 'controlador' ? <Database size={14} /> : <Sparkles size={14} />}
                   </span>
                   <span className="menu-input-texto">
                     {modoActivo === 'controlador' ? 'Controlador' : 'ChatIA'}
                   </span>
-                  <span className="menu-input-arrow">{menuInputAbierto ? 'v' : '>'}</span>
+                  <span className="menu-input-arrow">
+                    {menuModoAbierto ? <ChevronUp size={10} /> : <ChevronDown size={10} />}
+                  </span>
                 </button>
 
-                {/* Dropdown del menu */}
-                {menuInputAbierto && (
+                {menuModoAbierto && (
                   <div className="menu-input-dropdown">
                     {modoActivo !== 'controlador' && (
                       <button
                         type="button"
                         className="menu-input-option"
-                        onClick={() => { cambiarModo('controlador'); setMenuInputAbierto(false) }}
+                        onClick={() => { cambiarModo('controlador'); setMenuModoAbierto(false) }}
                       >
-                        <span className="option-icon">*</span>
+                        <span className="option-icon"><Database size={16} /></span>
                         <span className="option-texto">Controlador</span>
                         <span className="option-desc">Gestionar datos</span>
                       </button>
@@ -891,68 +854,13 @@ El usuario ya aprobo esta delegacion. Procede a pedir confirmacion para agregar 
                       <button
                         type="button"
                         className="menu-input-option"
-                        onClick={() => { cambiarModo('chatia'); setMenuInputAbierto(false) }}
+                        onClick={() => { cambiarModo('chatia'); setMenuModoAbierto(false) }}
                       >
-                        <span className="option-icon">#</span>
+                        <span className="option-icon"><Sparkles size={16} /></span>
                         <span className="option-texto">ChatIA</span>
                         <span className="option-desc">Chat general</span>
                       </button>
                     )}
-                    <div className="menu-input-divider"></div>
-                    <button
-                      type="button"
-                      className="menu-input-option option-meta-ads"
-                      onClick={() => { navegarA('meta-ads'); setMenuInputAbierto(false) }}
-                    >
-                      <span className="option-icon">@</span>
-                      <span className="option-texto">Meta Ads</span>
-                      <span className="option-desc">Ver campanas</span>
-                    </button>
-                    <button
-                      type="button"
-                      className="menu-input-option option-tareas"
-                      onClick={() => { navegarA('tareas'); setMenuInputAbierto(false) }}
-                    >
-                      <span className="option-icon">T</span>
-                      <span className="option-texto">Tareas</span>
-                      <span className="option-desc">Ver tareas</span>
-                    </button>
-                    <button
-                      type="button"
-                      className="menu-input-option option-integraciones"
-                      onClick={() => { navegarA('integraciones'); setMenuInputAbierto(false) }}
-                    >
-                      <span className="option-icon">+</span>
-                      <span className="option-texto">Integraciones</span>
-                      <span className="option-desc">Facebook/Instagram</span>
-                    </button>
-                    <button
-                      type="button"
-                      className="menu-input-option option-informes"
-                      onClick={() => { navegarA('informes'); setMenuInputAbierto(false) }}
-                    >
-                      <span className="option-icon">📊</span>
-                      <span className="option-texto">Informes</span>
-                      <span className="option-desc">Informes Instagram</span>
-                    </button>
-                    <button
-                      type="button"
-                      className="menu-input-option option-entrenador"
-                      onClick={() => { navegarA('entrenador'); setMenuInputAbierto(false) }}
-                    >
-                      <span className="option-icon">🧠</span>
-                      <span className="option-texto">Entrenador</span>
-                      <span className="option-desc">Entrenar IA de marca</span>
-                    </button>
-                    <div className="menu-input-divider"></div>
-                    <button
-                      type="button"
-                      className="menu-input-option option-reiniciar"
-                      onClick={() => { handleReiniciarChat(); setMenuInputAbierto(false) }}
-                    >
-                      <span className="option-icon">R</span>
-                      <span className="option-texto">Reiniciar chat</span>
-                    </button>
                   </div>
                 )}
               </div>
@@ -973,7 +881,7 @@ El usuario ya aprobo esta delegacion. Procede a pedir confirmacion para agregar 
                 disabled={enviando || !inputMensaje.trim() || mensajesCount >= 20}
                 className="btn-enviar"
               >
-                {enviando ? '...' : '>'}
+                {enviando ? '...' : <Send size={18} />}
               </button>
             </form>
           </footer>
@@ -1010,7 +918,7 @@ El usuario ya aprobo esta delegacion. Procede a pedir confirmacion para agregar 
           onClick={() => cambiarVistaMobile('chat')}
         >
           <span className="mobile-nav-icon">
-            {modoActivo === 'controlador' ? '*' : '#'}
+            {modoActivo === 'controlador' ? <Database size={20} /> : <Sparkles size={20} />}
           </span>
           <span className="mobile-nav-label">Chat</span>
         </button>
@@ -1018,10 +926,16 @@ El usuario ya aprobo esta delegacion. Procede a pedir confirmacion para agregar 
           className={`mobile-nav-btn ${vistaMobile === 'editor' ? 'active' : ''}`}
           onClick={() => cambiarVistaMobile('editor')}
         >
-          <span className="mobile-nav-icon">=</span>
+          <span className="mobile-nav-icon"><PanelRightOpen size={20} /></span>
           <span className="mobile-nav-label">Editor</span>
         </button>
       </nav>
     </div>
+  )
+
+  return (
+    <DashboardLayout>
+      {renderVistaActiva()}
+    </DashboardLayout>
   )
 }
