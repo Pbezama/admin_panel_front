@@ -14,9 +14,7 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { useAuth } from '@/context/AuthContext'
-import { useView } from '@/context/ViewContext'
 import { api } from '@/lib/api'
-import NotificacionesCampana from '@/components/NotificacionesCampana'
 import '@/styles/TareasView.css'
 
 // Estados del pipeline
@@ -537,7 +535,9 @@ const TareaDetalleModal = ({ tarea, onClose, onCambiarEstado, esAdmin, colaborad
                   >
                     <option value="">Sin asignar</option>
                     {colaboradores.map(col => (
-                      <option key={col.id} value={col.id}>{col.nombre}</option>
+                      <option key={col.id} value={col.id}>
+                        {col.nombre}{col.tipo_usuario === 'adm' ? ' (Admin)' : ''}{col.nombre_marca ? ` - ${col.nombre_marca}` : ''}
+                      </option>
                     ))}
                   </select>
                 </div>
@@ -759,7 +759,7 @@ const NuevaTareaModal = ({ onClose, onCrear, colaboradores }) => {
     e.preventDefault()
     if (!formData.titulo.trim()) return
     if (!formData.asignado_a) {
-      alert('Debes asignar la tarea a un colaborador')
+      alert('Debes asignar la tarea a alguien')
       return
     }
 
@@ -834,9 +834,11 @@ const NuevaTareaModal = ({ onClose, onCrear, colaboradores }) => {
             <div className="form-grupo">
               <label>Asignar a *</label>
               <select value={formData.asignado_a} onChange={(e) => setFormData({...formData, asignado_a: e.target.value})} required>
-                <option value="">Seleccionar colaborador</option>
+                <option value="">Seleccionar persona</option>
                 {colaboradores.map(col => (
-                  <option key={col.id} value={col.id}>{col.nombre}</option>
+                  <option key={col.id} value={col.id}>
+                    {col.nombre}{col.tipo_usuario === 'adm' ? ' (Admin)' : ''}{col.nombre_marca ? ` - ${col.nombre_marca}` : ''}
+                  </option>
                 ))}
               </select>
             </div>
@@ -1145,8 +1147,7 @@ const PublicacionCardEditable = ({ publicacion, onAprobar, onRechazar, procesand
 // COMPONENTE PRINCIPAL: TareasView
 // ============================================
 const TareasView = () => {
-  const { esAdministrador, esColaborador, usuario, logout } = useAuth()
-  const { volverAlChat } = useView()
+  const { esAdministrador, esColaborador, usuario } = useAuth()
 
   const [tareas, setTareas] = useState([])
   const [colaboradores, setColaboradores] = useState([])
@@ -1373,15 +1374,9 @@ const TareasView = () => {
         </div>
       )}
 
-      {/* Header */}
-      <header className="tareas-header">
-        <div className="header-left">
-          {esAdministrador && (
-            <button className="btn-volver" onClick={volverAlChat}>← Volver al Chat</button>
-          )}
-          <h1>📋 {esColaborador ? 'Mis Tareas' : 'Gestion de Tareas'}</h1>
-        </div>
-        <div className="header-right">
+      {/* Toolbar */}
+      <div className="tareas-toolbar">
+        <div className="toolbar-left">
           <div className="vista-toggle">
             <button className={vistaActual === 'pipeline' ? 'activo' : ''} onClick={() => setVistaActual('pipeline')}>
               Pipeline
@@ -1390,6 +1385,9 @@ const TareasView = () => {
               Tabla
             </button>
           </div>
+          <span className="tareas-count">{tareasFiltradas.length} tarea{tareasFiltradas.length !== 1 ? 's' : ''}</span>
+        </div>
+        <div className="toolbar-right">
           {esAdministrador && (
             <>
               <button className="btn-ver-archivos" onClick={() => setMostrarTodosArchivos(true)}>
@@ -1400,12 +1398,8 @@ const TareasView = () => {
               </button>
             </>
           )}
-          <NotificacionesCampana esAdmin={esAdministrador} />
-          <button className="btn-cerrar-sesion" onClick={logout}>
-            Cerrar Sesion
-          </button>
         </div>
-      </header>
+      </div>
 
       {/* Filtros */}
       <div className="filtros-bar">
@@ -1425,9 +1419,9 @@ const TareasView = () => {
           </select>
           {esAdministrador && (
             <select value={filtroColaborador} onChange={(e) => setFiltroColaborador(e.target.value)}>
-              <option value="">Todos los colaboradores</option>
+              <option value="">Todos los asignados</option>
               {colaboradores.map(col => (
-                <option key={col.id} value={col.id}>{col.nombre}</option>
+                <option key={col.id} value={col.id}>{col.nombre}{col.tipo_usuario === 'adm' ? ' (Admin)' : ''}</option>
               ))}
             </select>
           )}

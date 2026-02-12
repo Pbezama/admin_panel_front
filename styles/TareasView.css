@@ -3,10 +3,12 @@
  */
 
 .tareas-view {
-  min-height: 100vh;
+  flex: 1;
   background: #faf8f5;
   display: flex;
   flex-direction: column;
+  overflow-y: auto;
+  min-height: 0;
 }
 
 .tareas-view.loading {
@@ -85,49 +87,35 @@
   background: rgba(255, 255, 255, 0.3);
 }
 
-/* Header */
-.tareas-header {
-  background: #fff;
-  padding: 16px 24px;
+/* Toolbar (replaces old header - navigation is in DashboardLayout sidebar) */
+.tareas-toolbar {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  padding: 10px 24px;
+  background: #fff;
   border-bottom: 1px solid #e2e8f0;
-  position: sticky;
-  top: 0;
-  z-index: 100;
+  gap: 12px;
+  flex-shrink: 0;
+  flex-wrap: wrap;
 }
 
-.tareas-header .header-left {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-}
-
-.tareas-header h1 {
-  margin: 0;
-  font-size: 1.5rem;
-  color: #1e293b;
-}
-
-.tareas-header .header-right {
+.toolbar-left {
   display: flex;
   align-items: center;
   gap: 12px;
 }
 
-.btn-volver {
-  padding: 8px 16px;
-  background: #f1f5f9;
-  border: 1px solid #e2e8f0;
-  border-radius: 8px;
-  cursor: pointer;
-  font-size: 14px;
-  transition: all 0.2s;
+.toolbar-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
 }
 
-.btn-volver:hover {
-  background: #e2e8f0;
+.tareas-count {
+  font-size: 0.8rem;
+  color: #94a3b8;
+  font-weight: 500;
 }
 
 .vista-toggle {
@@ -138,51 +126,35 @@
 }
 
 .vista-toggle button {
-  padding: 8px 16px;
+  padding: 7px 14px;
   border: none;
   background: transparent;
   cursor: pointer;
-  font-size: 14px;
+  font-size: 13px;
   color: #64748b;
   transition: all 0.2s;
+  font-weight: 500;
 }
 
 .vista-toggle button.activo {
-  background: #3b82f6;
+  background: hsl(222 35% 28%);
   color: white;
 }
 
 .btn-nueva-tarea {
-  padding: 10px 20px;
-  background: #3b82f6;
+  padding: 8px 16px;
+  background: hsl(222 35% 28%);
   border: none;
   border-radius: 8px;
   color: white;
   cursor: pointer;
-  font-size: 14px;
-  font-weight: 500;
+  font-size: 13px;
+  font-weight: 600;
   transition: all 0.2s;
 }
 
 .btn-nueva-tarea:hover {
-  background: #2563eb;
-}
-
-.btn-cerrar-sesion {
-  padding: 10px 16px;
-  background: #f1f5f9;
-  border: 1px solid #e2e8f0;
-  border-radius: 8px;
-  color: #64748b;
-  cursor: pointer;
-  font-size: 14px;
-  transition: all 0.2s;
-}
-
-.btn-cerrar-sesion:hover {
-  background: #fef2f2;
-  border-color: #fecaca;
-  color: #ef4444;
+  background: hsl(222 35% 22%);
 }
 
 /* Pipeline Container */
@@ -203,7 +175,7 @@
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
   display: flex;
   flex-direction: column;
-  max-height: calc(100vh - 140px);
+  max-height: calc(100vh - 200px);
 }
 
 .columna-header {
@@ -303,6 +275,16 @@
   align-items: center;
   font-size: 0.8rem;
   color: #64748b;
+  gap: 8px;
+  flex-wrap: wrap;
+  min-width: 0;
+}
+
+.tarea-footer > span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .tarea-fecha.vencida {
@@ -1302,13 +1284,13 @@
    BOTON VER ARCHIVOS (HEADER)
    ============================================ */
 .btn-ver-archivos {
-  padding: 10px 16px;
+  padding: 8px 14px;
   background: #f1f5f9;
   border: 1px solid #e2e8f0;
   border-radius: 8px;
   color: #475569;
   cursor: pointer;
-  font-size: 14px;
+  font-size: 13px;
   transition: all 0.2s;
 }
 
@@ -1505,15 +1487,28 @@
 
 /* Responsive */
 @media (max-width: 768px) {
-  .tareas-header {
-    flex-direction: column;
-    gap: 12px;
-    align-items: stretch;
+  .tareas-toolbar {
+    padding: 8px 16px;
+    gap: 8px;
   }
 
-  .tareas-header .header-left,
-  .tareas-header .header-right {
-    justify-content: center;
+  .tareas-toolbar .vista-toggle button {
+    padding: 6px 10px;
+    font-size: 12px;
+  }
+
+  .tareas-toolbar .btn-nueva-tarea {
+    padding: 6px 12px;
+    font-size: 12px;
+  }
+
+  .tareas-toolbar .btn-ver-archivos {
+    padding: 6px 10px;
+    font-size: 12px;
+  }
+
+  .tareas-count {
+    display: none;
   }
 
   .pipeline-container {
@@ -1965,7 +1960,7 @@
 
 .publicaciones-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(min(320px, 100%), 1fr));
   gap: 16px;
 }
 
@@ -2032,6 +2027,12 @@
   background: #f8fafc;
   transition: all 0.2s ease;
   box-sizing: border-box;
+  min-width: 0;
+}
+
+.publicacion-campo-editable {
+  min-width: 0;
+  overflow: hidden;
 }
 
 .publicacion-campo-editable input:focus,
@@ -2070,17 +2071,29 @@
 }
 
 .publicacion-campos-row.dos-columnas {
-  grid-template-columns: repeat(2, 1fr);
+  grid-template-columns: repeat(auto-fit, minmax(min(200px, 100%), 1fr));
 }
 
 .publicacion-campos-row.tres-columnas {
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+}
+
+.publicacion-campo-editable.campo-small {
+  min-width: 0;
+  overflow: hidden;
 }
 
 .publicacion-campo-editable.campo-small input,
 .publicacion-campo-editable.campo-small select {
   padding: 8px 10px;
   font-size: 0.8rem;
+  min-width: 0;
+  max-width: 100%;
+}
+
+.publicacion-campo-editable.campo-small input[type="date"] {
+  -webkit-appearance: none;
+  appearance: none;
 }
 
 /* Campos de solo lectura (texto plano) */
@@ -2186,6 +2199,10 @@
     grid-template-columns: 1fr;
   }
 
+  .publicacion-card-editable {
+    padding: 14px;
+  }
+
   .publicacion-acciones {
     flex-direction: column;
   }
@@ -2193,5 +2210,26 @@
   .publicacion-campos-row.dos-columnas,
   .publicacion-campos-row.tres-columnas {
     grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 480px) {
+  .publicacion-card-editable {
+    padding: 12px;
+  }
+
+  .publicacion-campo-editable.campo-small input,
+  .publicacion-campo-editable.campo-small select {
+    padding: 8px;
+    font-size: 0.75rem;
+  }
+
+  .publicacion-acciones button {
+    padding: 8px 10px;
+    font-size: 0.75rem;
+  }
+
+  .tarea-footer {
+    font-size: 0.7rem;
   }
 }
