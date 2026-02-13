@@ -1,8 +1,9 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useAuth } from '@/context/AuthContext'
 import { useView } from '@/context/ViewContext'
+import { api } from '@/lib/api'
 import {
   MessageSquare,
   CheckSquare,
@@ -15,6 +16,7 @@ import {
   ChevronLeft,
   ChevronRight,
   LogOut,
+  ExternalLink,
   Menu
 } from 'lucide-react'
 
@@ -47,6 +49,22 @@ const navGroups = [
 export default function Sidebar({ collapsed, onToggleCollapse, mobileOpen, onCloseMobile }) {
   const { usuario, logout, esSuperAdmin, marcaActiva } = useAuth()
   const { vistaActiva, navegarA } = useView()
+  const [sitioWeb, setSitioWeb] = useState(null)
+
+  // Cargar sitio web de la marca
+  useEffect(() => {
+    const cargarSitioWeb = async () => {
+      try {
+        const resultado = await api.getSitioWebMarca()
+        if (resultado.success && resultado.sitio_web) {
+          setSitioWeb(resultado.sitio_web)
+        }
+      } catch (err) {
+        console.log('Sitio web no disponible')
+      }
+    }
+    cargarSitioWeb()
+  }, [marcaActiva])
 
   const handleNavClick = (vistaId) => {
     navegarA(vistaId)
@@ -77,7 +95,7 @@ export default function Sidebar({ collapsed, onToggleCollapse, mobileOpen, onClo
         {/* Logo */}
         <div className="sidebar-logo-area">
           <div className="sidebar-logo">
-            <img src="/logo-crecetec.png" alt="CreceTec" />
+            <img src="/Logo.png" alt="CreceTec" />
             <div className="sidebar-logo-text">
               <h2>CreceTec</h2>
               <span>Panel de Administracion</span>
@@ -91,6 +109,20 @@ export default function Sidebar({ collapsed, onToggleCollapse, mobileOpen, onClo
             {collapsed ? <ChevronRight size={12} /> : <ChevronLeft size={12} />}
           </button>
         </div>
+
+        {/* Link al sitio web del cliente */}
+        {sitioWeb && (
+          <a
+            href={sitioWeb}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="sidebar-website-link"
+            title={sitioWeb}
+          >
+            <ExternalLink size={14} />
+            <span className="sidebar-website-text">Ir a mi sitio web</span>
+          </a>
+        )}
 
         {/* Navigation */}
         <nav className="sidebar-nav">

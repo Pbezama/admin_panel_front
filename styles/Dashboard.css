@@ -79,6 +79,39 @@
   display: none;
 }
 
+/* Website link */
+.sidebar-website-link {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 20px;
+  color: hsl(220 80% 70%);
+  text-decoration: none;
+  font-size: 12px;
+  transition: all 0.2s ease;
+  border-bottom: 1px solid hsl(222 20% 22%);
+}
+
+.sidebar-website-link:hover {
+  color: hsl(220 90% 80%);
+  background: hsl(222 25% 18%);
+}
+
+.sidebar-website-text {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.sidebar.collapsed .sidebar-website-link {
+  justify-content: center;
+  padding: 8px 0;
+}
+
+.sidebar.collapsed .sidebar-website-text {
+  display: none;
+}
+
 /* Toggle button */
 .sidebar-toggle {
   position: absolute;
