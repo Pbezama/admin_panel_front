@@ -34,15 +34,15 @@ const navGroups = [
       { id: 'flujos', label: 'Flujos', icon: GitBranch, desc: 'Flujos conversacionales' },
       { id: 'entrenador', label: 'Entrenador', icon: Brain, desc: 'Entrenar IA' },
       { id: 'informes', label: 'Informes', icon: BarChart3, desc: 'Informes Instagram' },
-    ]
-  },
-  {
-    label: 'Canales',
-    items: [
       { id: 'dashboard-live', label: 'Chat en Vivo', icon: Headphones, desc: 'Conversaciones transferidas' },
-      { id: 'integraciones', label: 'Integraciones', icon: Link, desc: 'Facebook / Instagram' },
-      { id: 'meta-ads', label: 'Meta Ads', icon: Megaphone, desc: 'Campanas' },
     ]
+  // },
+  // {
+  //   label: 'Canales',
+  //   items: [
+  //     { id: 'integraciones', label: 'Integraciones', icon: Link, desc: 'Facebook / Instagram' },
+  //     { id: 'meta-ads', label: 'Meta Ads', icon: Megaphone, desc: 'Campanas' },
+  //   ]
   }
 ]
 
