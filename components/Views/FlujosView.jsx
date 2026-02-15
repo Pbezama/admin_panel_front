@@ -223,6 +223,7 @@ export default function FlujosView() {
           flujo={flujoActivo}
           onSave={handleGuardar}
           guardando={guardando}
+          marcaNombre={marcaActiva?.nombre_marca || usuario?.nombre_marca || ''}
         />
       </div>
     )

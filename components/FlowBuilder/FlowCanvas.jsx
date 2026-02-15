@@ -16,6 +16,8 @@ import '@xyflow/react/dist/style.css'
 import { nodeTypes } from './nodes/FlowNodes'
 import NodePalette from './NodePalette'
 import NodeInspector from './NodeInspector'
+import FlowAIChat from './FlowAIChat'
+import { autoLayoutNodes } from '@/lib/autoLayout'
 
 const DATOS_DEFAULT = {
   inicio: { trigger_tipo: 'keyword', trigger_valor: '' },
@@ -33,7 +35,7 @@ const DATOS_DEFAULT = {
   fin: { mensaje_despedida: '', accion: 'cerrar' }
 }
 
-export default function FlowCanvas({ flujo, onSave, guardando }) {
+export default function FlowCanvas({ flujo, onSave, guardando, marcaNombre }) {
   const reactFlowWrapper = useRef(null)
   const [reactFlowInstance, setReactFlowInstance] = useState(null)
   const [selectedNode, setSelectedNode] = useState(null)
@@ -117,6 +119,75 @@ export default function FlowCanvas({ flujo, onSave, guardando }) {
     setSelectedNode(null)
   }, [setNodes, setEdges])
 
+  // Recibir flujo generado por la IA
+  const handleFlowGenerated = useCallback((flujoIA) => {
+    if (!flujoIA || !flujoIA.nodos || flujoIA.nodos.length === 0) return
+
+    // Obtener nodo inicio existente
+    const nodoInicio = nodes.find(n => n.type === 'inicio')
+    const inicioInfo = nodoInicio
+      ? { id: nodoInicio.id, posicion: nodoInicio.position }
+      : { id: 'node_inicio', posicion: { x: 250, y: 50 } }
+
+    // Auto-layout de los nodos generados
+    const nodosConPosicion = autoLayoutNodes(flujoIA.nodos, flujoIA.edges, inicioInfo)
+
+    // Convertir a formato ReactFlow
+    const nuevosNodos = nodosConPosicion.map(n => ({
+      id: n.id,
+      type: n.tipo,
+      position: n.posicion,
+      data: n.datos || {}
+    }))
+
+    // Generar labels descriptivos para edges
+    const nuevosEdges = flujoIA.edges.map(e => {
+      let label = ''
+      if (e.condicion) {
+        if (e.condicion.tipo === 'boton') label = e.condicion.valor || ''
+        else if (e.condicion.tipo === 'resultado_true') label = 'Si'
+        else if (e.condicion.tipo === 'resultado_false') label = 'No'
+        else if (e.condicion.tipo === 'respuesta_exacta') label = e.condicion.valor || ''
+        else if (e.condicion.tipo === 'respuesta_contiene') label = `~${e.condicion.valor || ''}`
+      }
+
+      return {
+        id: e.id,
+        source: e.origen,
+        target: e.destino,
+        label,
+        markerEnd: { type: MarkerType.ArrowClosed },
+        style: { strokeWidth: 2 },
+        data: { condicion: e.condicion || null }
+      }
+    })
+
+    // Edge desde inicio al primer nodo generado
+    const primerNodoId = flujoIA.nodos[0]?.id
+    const edgeDesdeInicio = {
+      id: 'edge_inicio_ia',
+      source: inicioInfo.id,
+      target: primerNodoId,
+      label: '',
+      markerEnd: { type: MarkerType.ArrowClosed },
+      style: { strokeWidth: 2 },
+      data: { condicion: null }
+    }
+
+    // Mantener inicio + agregar nuevos nodos
+    setNodes(prev => {
+      const inicioNode = prev.find(n => n.type === 'inicio')
+      return inicioNode ? [inicioNode, ...nuevosNodos] : nuevosNodos
+    })
+
+    setEdges([edgeDesdeInicio, ...nuevosEdges])
+
+    // Ajustar vista despues de render
+    setTimeout(() => {
+      reactFlowInstance?.fitView({ padding: 0.15 })
+    }, 200)
+  }, [nodes, setNodes, setEdges, reactFlowInstance])
+
   // Guardar: convertir de React Flow al formato del backend
   const handleSave = () => {
     const nodosBackend = nodes.map(n => ({
@@ -141,7 +212,7 @@ export default function FlowCanvas({ flujo, onSave, guardando }) {
     <div className="flow-canvas-layout">
       <NodePalette />
 
-      <div className="flow-canvas-center" ref={reactFlowWrapper}>
+      <div className="flow-canvas-center">
         <div className="flow-canvas-toolbar">
           <button className="flow-btn-save" onClick={handleSave} disabled={guardando}>
             {guardando ? 'Guardando...' : 'Guardar flujo'}
@@ -151,38 +222,46 @@ export default function FlowCanvas({ flujo, onSave, guardando }) {
           </span>
         </div>
 
-        <ReactFlow
-          nodes={nodes}
-          edges={edges}
-          onNodesChange={onNodesChange}
-          onEdgesChange={onEdgesChange}
-          onConnect={onConnect}
-          onNodeClick={onNodeClick}
-          onPaneClick={onPaneClick}
-          onInit={setReactFlowInstance}
-          onDrop={onDrop}
-          onDragOver={onDragOver}
-          nodeTypes={nodeTypes}
-          fitView
-          deleteKeyCode={['Backspace', 'Delete']}
-          snapToGrid
-          snapGrid={[15, 15]}
-        >
-          <Background variant="dots" gap={15} size={1} />
-          <Controls />
-          <MiniMap
-            nodeColor={(n) => {
-              const colores = {
-                inicio: '#22c55e', mensaje: '#3b82f6', pregunta: '#f59e0b',
-                condicion: '#ec4899', guardar_variable: '#6366f1', guardar_bd: '#10b981',
-                buscar_conocimiento: '#eab308', respuesta_ia: '#8b5cf6',
-                crear_tarea: '#f97316', transferir_humano: '#ef4444', agendar_cita: '#059669', esperar: '#ea580c', fin: '#6b7280'
-              }
-              return colores[n.type] || '#999'
-            }}
-            style={{ height: 100 }}
-          />
-        </ReactFlow>
+        <div className="flow-canvas-reactflow-wrapper" ref={reactFlowWrapper}>
+          <ReactFlow
+            nodes={nodes}
+            edges={edges}
+            onNodesChange={onNodesChange}
+            onEdgesChange={onEdgesChange}
+            onConnect={onConnect}
+            onNodeClick={onNodeClick}
+            onPaneClick={onPaneClick}
+            onInit={setReactFlowInstance}
+            onDrop={onDrop}
+            onDragOver={onDragOver}
+            nodeTypes={nodeTypes}
+            fitView
+            deleteKeyCode={['Backspace', 'Delete']}
+            snapToGrid
+            snapGrid={[15, 15]}
+          >
+            <Background variant="dots" gap={15} size={1} />
+            <Controls />
+            <MiniMap
+              nodeColor={(n) => {
+                const colores = {
+                  inicio: '#22c55e', mensaje: '#3b82f6', pregunta: '#f59e0b',
+                  condicion: '#ec4899', guardar_variable: '#6366f1', guardar_bd: '#10b981',
+                  buscar_conocimiento: '#eab308', respuesta_ia: '#8b5cf6',
+                  crear_tarea: '#f97316', transferir_humano: '#ef4444', agendar_cita: '#059669', esperar: '#ea580c', fin: '#6b7280'
+                }
+                return colores[n.type] || '#999'
+              }}
+              style={{ height: 100 }}
+            />
+          </ReactFlow>
+        </div>
+
+        <FlowAIChat
+          flujo={flujo}
+          onFlowGenerated={handleFlowGenerated}
+          marcaNombre={marcaNombre}
+        />
       </div>
 
       <NodeInspector
