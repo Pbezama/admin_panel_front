@@ -32,7 +32,7 @@ export default function ChatPage() {
   const [arrastrando, setArrastrando] = useState(false)
 
   const { usuario, loading, logout, sesionChatId, mensajesCount, incrementarMensajes, reiniciarChat, esSuperAdmin, esColaborador, onboardingCompletado, requiereOnboarding, marcaActiva } = useAuth()
-  const { vistaActiva, navegarA, contextoVista } = useView()
+  const { vistaActiva, navegarA, contextoVista, inicializado } = useView()
   const router = useRouter()
   const chatEndRef = useRef(null)
   const inputRef = useRef(null)
@@ -52,10 +52,14 @@ export default function ChatPage() {
 
     if (!loading && usuario && onboardingCompletado !== false) {
       cargarDatosMarca()
-      if (esColaborador) {
-        navegarA('tareas')
-      } else {
-        agregarMensajeBienvenida()
+      // Solo auto-navegar si estamos en /chat raiz (no si ya hay sub-ruta)
+      const enRaiz = window.location.pathname === '/chat' || window.location.pathname === '/chat/'
+      if (enRaiz) {
+        if (esColaborador) {
+          navegarA('tareas')
+        } else {
+          agregarMensajeBienvenida()
+        }
       }
     }
   }, [usuario, loading, router, esColaborador, onboardingCompletado])

@@ -5,6 +5,7 @@ import { useAuth } from '@/context/AuthContext'
 import { useView } from '@/context/ViewContext'
 import { api } from '@/lib/api'
 import FlowCanvas from '@/components/FlowBuilder/FlowCanvas'
+import FlowMonitor from '@/components/FlowBuilder/FlowMonitor'
 import '@/styles/FlujosView.css'
 
 const TRIGGER_TIPOS = [
@@ -16,14 +17,14 @@ const TRIGGER_TIPOS = [
 
 export default function FlujosView() {
   const { usuario, marcaActiva } = useAuth()
-  const { volverAlChat } = useView()
+  const { navegarA, contextoVista } = useView()
 
   const [flujos, setFlujos] = useState([])
   const [flujoActivo, setFlujoActivo] = useState(null)
   const [cargando, setCargando] = useState(true)
   const [guardando, setGuardando] = useState(false)
   const [mensaje, setMensaje] = useState(null)
-  const [vistaActiva, setVistaActiva] = useState('lista') // lista | editor | nuevo
+  const [vistaActiva, setVistaActiva] = useState('lista') // lista | editor | nuevo | monitor
   const [nuevoFlujo, setNuevoFlujo] = useState({ nombre: '', descripcion: '', trigger_tipo: 'keyword', trigger_valor: '', canales: ['whatsapp'] })
 
   const idMarca = marcaActiva?.id_marca || usuario?.id_marca
@@ -31,6 +32,33 @@ export default function FlujosView() {
   useEffect(() => {
     cargarFlujos()
   }, [idMarca])
+
+  // Sincronizar sub-vista desde contextoVista (URL)
+  useEffect(() => {
+    if (!contextoVista) {
+      // Sin contexto = lista de flujos
+      if (vistaActiva !== 'lista' && vistaActiva !== 'nuevo') {
+        setVistaActiva('lista')
+        setFlujoActivo(null)
+      }
+      return
+    }
+
+    if (contextoVista.sub === 'editor' && contextoVista.id) {
+      // Abrir editor de un flujo especifico
+      api.getFlujo(contextoVista.id).then(result => {
+        setFlujoActivo(result.flujo)
+        setVistaActiva('editor')
+      }).catch(() => {
+        mostrarMensaje('Error abriendo flujo', 'error')
+        navegarA('flujos')
+      })
+    } else if (contextoVista.sub === 'monitor') {
+      setVistaActiva('monitor')
+    } else if (contextoVista.sub === 'nuevo') {
+      setVistaActiva('nuevo')
+    }
+  }, [contextoVista])
 
   const cargarFlujos = async () => {
     setCargando(true)
@@ -73,22 +101,15 @@ export default function FlujosView() {
       mostrarMensaje('Flujo creado', 'exito')
       setNuevoFlujo({ nombre: '', descripcion: '', trigger_tipo: 'keyword', trigger_valor: '', canales: ['whatsapp'] })
       await cargarFlujos()
-      // Abrir en editor
-      setFlujoActivo(result.flujo)
-      setVistaActiva('editor')
+      // Abrir en editor con URL
+      navegarA('flujos', { sub: 'editor', id: result.flujo.id })
     } catch (error) {
       mostrarMensaje('Error creando flujo: ' + error.message, 'error')
     }
   }
 
   const handleAbrirEditor = async (flujo) => {
-    try {
-      const result = await api.getFlujo(flujo.id)
-      setFlujoActivo(result.flujo)
-      setVistaActiva('editor')
-    } catch (error) {
-      mostrarMensaje('Error abriendo flujo', 'error')
-    }
+    navegarA('flujos', { sub: 'editor', id: flujo.id })
   }
 
   const handleGuardar = async (nodos, edges) => {
@@ -149,6 +170,12 @@ export default function FlujosView() {
     }
   }
 
+  const volverALista = () => {
+    navegarA('flujos')
+    setFlujoActivo(null)
+    setVistaActiva('lista')
+  }
+
   const estadoBadge = (estado) => {
     const estilos = {
       activo: 'flujo-badge-activo',
@@ -158,13 +185,22 @@ export default function FlujosView() {
     return <span className={`flujo-badge ${estilos[estado] || ''}`}>{estado}</span>
   }
 
+  // Vista: Monitor de flujos
+  if (vistaActiva === 'monitor') {
+    return (
+      <div className="flujos-view flujos-editor-mode">
+        <FlowMonitor onVolver={volverALista} />
+      </div>
+    )
+  }
+
   // Vista: Editor de flujo
   if (vistaActiva === 'editor' && flujoActivo) {
     return (
       <div className="flujos-view flujos-editor-mode">
         <header className="flujos-header">
           <div className="flujos-header-left">
-            <button className="flujos-btn-volver" onClick={() => { setVistaActiva('lista'); setFlujoActivo(null) }}>
+            <button className="flujos-btn-volver" onClick={volverALista}>
               ← Volver
             </button>
             <h2>{flujoActivo.nombre}</h2>
@@ -197,14 +233,20 @@ export default function FlujosView() {
     <div className="flujos-view">
       <header className="flujos-header">
         <div className="flujos-header-left">
-          <button className="flujos-btn-volver" onClick={volverAlChat}>← Volver</button>
+          <button className="flujos-btn-volver" onClick={() => navegarA('chat')}>← Volver</button>
           <h2>Flujos Conversacionales</h2>
         </div>
         <div className="flujos-header-right">
+          <button className="flujos-btn-monitor" onClick={() => navegarA('flujos', { sub: 'monitor' })}>
+            Monitor
+          </button>
           <button className="flujos-btn-seed" onClick={handleCrearSeed}>
             Crear flujo ejemplo
           </button>
-          <button className="flujos-btn-nuevo" onClick={() => setVistaActiva('nuevo')}>
+          <button className="flujos-btn-nuevo" onClick={() => {
+            setVistaActiva('nuevo')
+            navegarA('flujos', { sub: 'nuevo' })
+          }}>
             + Nuevo flujo
           </button>
         </div>
@@ -286,7 +328,7 @@ export default function FlujosView() {
             </div>
           </div>
           <div className="flujos-form-actions">
-            <button className="flujos-btn-cancelar" onClick={() => setVistaActiva('lista')}>Cancelar</button>
+            <button className="flujos-btn-cancelar" onClick={volverALista}>Cancelar</button>
             <button className="flujos-btn-crear" onClick={handleCrearFlujo}>Crear flujo</button>
           </div>
         </div>

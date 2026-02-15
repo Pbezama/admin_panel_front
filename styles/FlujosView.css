@@ -66,6 +66,18 @@
 }
 .flujos-btn-nuevo:hover { background: #2563eb; }
 
+.flujos-btn-monitor {
+  background: #eff6ff;
+  border: 1px solid #93c5fd;
+  padding: 8px 14px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 13px;
+  color: #1d4ed8;
+  font-weight: 500;
+}
+.flujos-btn-monitor:hover { background: #dbeafe; }
+
 .flujos-btn-seed {
   background: #f1f5f9;
   border: 1px solid #e2e8f0;

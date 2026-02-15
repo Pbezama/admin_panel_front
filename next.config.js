@@ -1,6 +1,13 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  // Frontend con App Router
+  async rewrites() {
+    return [
+      {
+        source: '/chat/:path*',
+        destination: '/chat'
+      }
+    ]
+  }
 }
 
 module.exports = nextConfig

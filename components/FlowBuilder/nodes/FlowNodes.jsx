@@ -37,9 +37,17 @@ const LABELS = {
   fin: 'Fin'
 }
 
+// Colores del punto de estado del monitor
+const MONITOR_DOT = {
+  ejecutado: '#22c55e',
+  error: '#ef4444',
+  esperando: '#f59e0b'
+}
+
 function BaseNode({ data, tipo, selected }) {
   const color = COLORES[tipo] || COLORES.mensaje
   const label = LABELS[tipo] || tipo
+  const monitorEstado = data._monitorEstado  // 'ejecutado' | 'error' | 'esperando' | null
 
   return (
     <div
@@ -51,9 +59,39 @@ function BaseNode({ data, tipo, selected }) {
         minWidth: 180,
         maxWidth: 260,
         fontSize: 13,
-        boxShadow: selected ? '0 0 0 2px #000' : '0 1px 3px rgba(0,0,0,0.1)'
+        boxShadow: selected ? '0 0 0 2px #000' : '0 1px 3px rgba(0,0,0,0.1)',
+        position: 'relative'
       }}
     >
+      {/* Punto de estado - solo aparece en modo monitor */}
+      {monitorEstado && (
+        <div style={{
+          position: 'absolute',
+          top: -6,
+          right: -6,
+          width: 14,
+          height: 14,
+          borderRadius: '50%',
+          background: MONITOR_DOT[monitorEstado] || '#9ca3af',
+          border: '2px solid #fff',
+          boxShadow: '0 1px 3px rgba(0,0,0,0.3)'
+        }} />
+      )}
+      {/* Punto gris para nodos no alcanzados en modo monitor */}
+      {data._monitorActivo && !monitorEstado && (
+        <div style={{
+          position: 'absolute',
+          top: -6,
+          right: -6,
+          width: 14,
+          height: 14,
+          borderRadius: '50%',
+          background: '#d1d5db',
+          border: '2px solid #fff',
+          boxShadow: '0 1px 3px rgba(0,0,0,0.2)'
+        }} />
+      )}
+
       <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4, fontWeight: 600 }}>
         <span>{color.icon}</span>
         <span>{label}</span>
@@ -80,6 +118,7 @@ function BaseNode({ data, tipo, selected }) {
           ))}
         </div>
       )}
+
     </div>
   )
 }
