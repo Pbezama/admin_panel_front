@@ -17,6 +17,8 @@ const COLORES = {
   crear_tarea: { bg: '#ffedd5', border: '#f97316', icon: '📋' },
   transferir_humano: { bg: '#fee2e2', border: '#ef4444', icon: '🧑‍💼' },
   agendar_cita: { bg: '#ecfdf5', border: '#059669', icon: '📅' },
+  reconocer_respuesta: { bg: '#fdf2f8', border: '#d946ef', icon: '🧠' },
+  usar_agente: { bg: '#f5f3ff', border: '#8b5cf6', icon: '🤖' },
   esperar: { bg: '#fff7ed', border: '#ea580c', icon: '⏳' },
   fin: { bg: '#f3f4f6', border: '#6b7280', icon: '🏁' }
 }
@@ -33,6 +35,8 @@ const LABELS = {
   crear_tarea: 'Crear Tarea',
   transferir_humano: 'Transferir Humano',
   agendar_cita: 'Agendar Cita',
+  reconocer_respuesta: 'Reconocer Respuesta',
+  usar_agente: 'Usar Agente',
   esperar: 'Esperar Respuesta',
   fin: 'Fin'
 }
@@ -222,6 +226,33 @@ export function TransferirHumanoNode({ data, selected }) {
   )
 }
 
+export function ReconocerRespuestaNode({ data, selected }) {
+  const salidas = data.salidas || []
+  return (
+    <div>
+      <Handle type="target" position={Position.Top} style={handleStyle} />
+      <BaseNode data={{ texto: data.instrucciones || 'Analizar respuesta con IA' }} tipo="reconocer_respuesta" selected={selected} />
+      {salidas.length > 0 ? (
+        salidas.map((s, i) => (
+          <Handle
+            key={s.id}
+            type="source"
+            position={Position.Bottom}
+            id={s.id}
+            style={{
+              ...handleStyle,
+              left: `${((i + 1) / (salidas.length + 1)) * 100}%`,
+              background: '#d946ef'
+            }}
+          />
+        ))
+      ) : (
+        <Handle type="source" position={Position.Bottom} style={handleStyle} />
+      )}
+    </div>
+  )
+}
+
 export function EsperarNode({ data, selected }) {
   return (
     <div>
@@ -238,6 +269,15 @@ export function AgendarCitaNode({ data, selected }) {
       <Handle type="target" position={Position.Top} style={handleStyle} />
       <BaseNode data={{ texto: data.titulo || 'Agendar cita en Calendar' }} tipo="agendar_cita" selected={selected} />
       <Handle type="source" position={Position.Bottom} style={handleStyle} />
+    </div>
+  )
+}
+
+export function UsarAgenteNode({ data, selected }) {
+  return (
+    <div>
+      <Handle type="target" position={Position.Top} style={handleStyle} />
+      <BaseNode data={{ texto: data._agente_nombre || data.mensaje_transicion || 'Delegar a agente IA' }} tipo="usar_agente" selected={selected} />
     </div>
   )
 }
@@ -264,6 +304,8 @@ export const nodeTypes = {
   crear_tarea: CrearTareaNode,
   transferir_humano: TransferirHumanoNode,
   agendar_cita: AgendarCitaNode,
+  reconocer_respuesta: ReconocerRespuestaNode,
+  usar_agente: UsarAgenteNode,
   esperar: EsperarNode,
   fin: FinNode
 }

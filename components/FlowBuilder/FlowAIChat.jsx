@@ -5,12 +5,49 @@ import { api } from '@/lib/api'
 
 const MENSAJE_SEED = 'Hola, quiero crear un flujo'
 
-export default function FlowAIChat({ flujo, onFlowGenerated, marcaNombre }) {
+/**
+ * Genera un resumen compacto del flujo actual para enviar a la IA
+ * como contexto cuando el usuario pide modificaciones.
+ */
+function resumirFlujoActual(nodos, edges) {
+  if (!nodos || nodos.length <= 1) return null
+
+  const resumen = nodos
+    .filter(n => n.type !== 'inicio')
+    .map(n => {
+      let detalle = n.type
+      if (n.data?.texto) detalle += `: "${n.data.texto.slice(0, 60)}"`
+      else if (n.data?.mensaje_despedida) detalle += `: "${n.data.mensaje_despedida.slice(0, 60)}"`
+      else if (n.data?.mensaje_usuario) detalle += `: "${n.data.mensaje_usuario.slice(0, 60)}"`
+      else if (n.data?.instrucciones) detalle += `: "${n.data.instrucciones.slice(0, 60)}"`
+      else if (n.data?.variable) detalle += `: ${n.data.variable}`
+      else if (n.data?.titulo) detalle += `: "${n.data.titulo.slice(0, 60)}"`
+      return `  ${n.id} [${detalle}]`
+    })
+    .join('\n')
+
+  const conexiones = edges
+    .map(e => {
+      let label = ''
+      if (e.data?.condicion) {
+        const c = e.data.condicion
+        if (c.tipo === 'boton') label = ` (boton: ${c.valor})`
+        else if (c.tipo === 'resultado_true') label = ' (Si)'
+        else if (c.tipo === 'resultado_false') label = ' (No)'
+      }
+      return `  ${e.source} → ${e.target}${label}`
+    })
+    .join('\n')
+
+  return `NODOS (${nodos.length}):\n${resumen}\n\nCONEXIONES (${edges.length}):\n${conexiones}`
+}
+
+export default function FlowAIChat({ flujo, onFlowGenerated, marcaNombre, nodosActuales, edgesActuales }) {
   const [mensajes, setMensajes] = useState([])
   const [input, setInput] = useState('')
   const [enviando, setEnviando] = useState(false)
   const [minimizado, setMinimizado] = useState(false)
-  const [flujoGenerado, setFlujoGenerado] = useState(false)
+  const [vecesGenerado, setVecesGenerado] = useState(0)
   const chatEndRef = useRef(null)
   const iniciadoRef = useRef(false)
 
@@ -50,6 +87,9 @@ export default function FlowAIChat({ flujo, onFlowGenerated, marcaNombre }) {
         tipo: m.tipo
       }))
 
+      // Incluir resumen del flujo actual si ya hay nodos en el canvas
+      const flujoActualResumen = resumirFlujoActual(nodosActuales, edgesActuales)
+
       const respuesta = await api.chatCreadorFlujos(
         texto,
         historial,
@@ -57,8 +97,10 @@ export default function FlowAIChat({ flujo, onFlowGenerated, marcaNombre }) {
           nombreMarca: marcaNombre || '',
           nombre: flujo?.nombre || '',
           trigger_tipo: flujo?.trigger_tipo || 'keyword',
+          trigger_modo: flujo?.trigger_modo || 'contiene',
           trigger_valor: flujo?.trigger_valor || '',
-          canales: flujo?.canales || []
+          canales: flujo?.canales || [],
+          flujoActual: flujoActualResumen
         }
       )
 
@@ -72,9 +114,9 @@ export default function FlowAIChat({ flujo, onFlowGenerated, marcaNombre }) {
 
       setMensajes(prev => [...prev, mensajeIA])
 
-      // Si se genero el flujo, notificar al padre
+      // Si se genero/actualizo el flujo, notificar al padre
       if (respuesta.tipo === 'flujo_generado' && respuesta.flujo) {
-        setFlujoGenerado(true)
+        setVecesGenerado(prev => prev + 1)
         onFlowGenerated(respuesta.flujo)
       }
 
@@ -102,7 +144,7 @@ export default function FlowAIChat({ flujo, onFlowGenerated, marcaNombre }) {
   }
 
   const handleRegenerar = () => {
-    setFlujoGenerado(false)
+    setVecesGenerado(0)
     setMensajes([])
     iniciadoRef.current = false
     setTimeout(() => {
@@ -127,6 +169,10 @@ export default function FlowAIChat({ flujo, onFlowGenerated, marcaNombre }) {
     !(m.rol === 'user' && m.contenido === MENSAJE_SEED)
   )
 
+  const placeholderTexto = vecesGenerado > 0
+    ? 'Pide cambios: "agrega un paso de...", "cambia el mensaje de...", "elimina..."'
+    : 'Describe lo que necesitas...'
+
   return (
     <div className="flow-ai-chat">
       <div className="flow-ai-chat-header">
@@ -134,9 +180,16 @@ export default function FlowAIChat({ flujo, onFlowGenerated, marcaNombre }) {
           <span className="flow-ai-chat-icon">⚡</span>
           <span className="flow-ai-chat-title">Creador de Flujo con IA</span>
         </div>
-        <button className="flow-ai-chat-minimize" onClick={() => setMinimizado(true)} title="Minimizar">
-          ▼
-        </button>
+        <div className="flow-ai-chat-header-right">
+          {vecesGenerado > 0 && (
+            <button className="flow-ai-chat-regenerate" onClick={handleRegenerar} title="Borrar todo y empezar desde cero">
+              Desde cero
+            </button>
+          )}
+          <button className="flow-ai-chat-minimize" onClick={() => setMinimizado(true)} title="Minimizar">
+            ▼
+          </button>
+        </div>
       </div>
 
       <div className="flow-ai-chat-messages">
@@ -162,10 +215,10 @@ export default function FlowAIChat({ flujo, onFlowGenerated, marcaNombre }) {
               </div>
             )}
 
-            {/* Indicador de flujo generado */}
+            {/* Indicador de flujo generado/actualizado */}
             {m.tipo === 'flujo_generado' && (
               <div className="flow-ai-msg-success">
-                ✓ Flujo generado con exito. Revisa el canvas de arriba.
+                ✓ Flujo actualizado en el canvas. Puedes seguir pidiendo cambios.
               </div>
             )}
           </div>
@@ -183,37 +236,25 @@ export default function FlowAIChat({ flujo, onFlowGenerated, marcaNombre }) {
         <div ref={chatEndRef} />
       </div>
 
-      {/* Input area */}
-      {!flujoGenerado && (
-        <div className="flow-ai-chat-input-area">
-          <input
-            type="text"
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            onKeyDown={handleKeyDown}
-            placeholder="Describe lo que necesitas..."
-            disabled={enviando}
-            className="flow-ai-chat-input"
-          />
-          <button
-            onClick={() => enviarMensaje(input)}
-            disabled={enviando || !input.trim()}
-            className="flow-ai-chat-send"
-          >
-            {enviando ? '...' : 'Enviar'}
-          </button>
-        </div>
-      )}
-
-      {/* Estado completado */}
-      {flujoGenerado && (
-        <div className="flow-ai-chat-done">
-          <span>Flujo generado. Puedes editarlo manualmente en el canvas.</span>
-          <button className="flow-ai-chat-regenerate" onClick={handleRegenerar}>
-            Regenerar
-          </button>
-        </div>
-      )}
+      {/* Input area - SIEMPRE visible */}
+      <div className="flow-ai-chat-input-area">
+        <input
+          type="text"
+          value={input}
+          onChange={(e) => setInput(e.target.value)}
+          onKeyDown={handleKeyDown}
+          placeholder={placeholderTexto}
+          disabled={enviando}
+          className="flow-ai-chat-input"
+        />
+        <button
+          onClick={() => enviarMensaje(input)}
+          disabled={enviando || !input.trim()}
+          className="flow-ai-chat-send"
+        >
+          {enviando ? '...' : 'Enviar'}
+        </button>
+      </div>
     </div>
   )
 }

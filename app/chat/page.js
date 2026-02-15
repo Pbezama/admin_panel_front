@@ -13,6 +13,7 @@ import IntegracionesView from '@/components/Views/IntegracionesView'
 import InformesView from '@/components/Views/InformesView'
 import EntrenadorView from '@/components/Views/EntrenadorView'
 import FlujosView from '@/components/Views/FlujosView'
+import AgentesView from '@/components/Views/AgentesView'
 import DashboardLiveView from '@/components/Views/DashboardLiveView'
 import DashboardLayout from '@/components/DashboardLayout'
 import { RotateCcw, Send, ChevronDown, ChevronUp, Database, Sparkles, PanelRightOpen, PanelRightClose } from 'lucide-react'
@@ -731,6 +732,8 @@ El usuario ya aprobo esta delegacion. Procede a pedir confirmacion para agregar 
         return <EntrenadorView />
       case 'flujos':
         return <FlujosView />
+      case 'agentes':
+        return <AgentesView />
       case 'dashboard-live':
         return <DashboardLiveView />
       default:

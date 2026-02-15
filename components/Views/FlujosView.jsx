@@ -9,10 +9,19 @@ import FlowMonitor from '@/components/FlowBuilder/FlowMonitor'
 import '@/styles/FlujosView.css'
 
 const TRIGGER_TIPOS = [
-  { value: 'keyword', label: 'Palabra clave' },
-  { value: 'first_message', label: 'Primer mensaje' },
-  { value: 'menu', label: 'Menu' },
-  { value: 'manual', label: 'Manual' }
+  {
+    value: 'keyword',
+    label: 'Palabra clave'
+  },
+  {
+    value: 'first_message',
+    label: 'Primer mensaje'
+  }
+]
+
+const TRIGGER_MODOS = [
+  { value: 'contiene', label: 'El mensaje contiene la palabra' },
+  { value: 'igual', label: 'El mensaje es exactamente igual' }
 ]
 
 export default function FlujosView() {
@@ -25,7 +34,7 @@ export default function FlujosView() {
   const [guardando, setGuardando] = useState(false)
   const [mensaje, setMensaje] = useState(null)
   const [vistaActiva, setVistaActiva] = useState('lista') // lista | editor | nuevo | monitor
-  const [nuevoFlujo, setNuevoFlujo] = useState({ nombre: '', descripcion: '', trigger_tipo: 'keyword', trigger_valor: '', canales: ['whatsapp'] })
+  const [nuevoFlujo, setNuevoFlujo] = useState({ nombre: '', descripcion: '', trigger_tipo: 'keyword', trigger_modo: 'contiene', trigger_valor: '', canales: ['whatsapp'] })
 
   const idMarca = marcaActiva?.id_marca || usuario?.id_marca
 
@@ -92,14 +101,14 @@ export default function FlujosView() {
             id: 'node_inicio',
             tipo: 'inicio',
             posicion: { x: 250, y: 50 },
-            datos: { trigger_tipo: nuevoFlujo.trigger_tipo, trigger_valor: nuevoFlujo.trigger_valor }
+            datos: { trigger_tipo: nuevoFlujo.trigger_tipo, trigger_modo: nuevoFlujo.trigger_modo, trigger_valor: nuevoFlujo.trigger_valor }
           }
         ],
         edges: []
       })
 
       mostrarMensaje('Flujo creado', 'exito')
-      setNuevoFlujo({ nombre: '', descripcion: '', trigger_tipo: 'keyword', trigger_valor: '', canales: ['whatsapp'] })
+      setNuevoFlujo({ nombre: '', descripcion: '', trigger_tipo: 'keyword', trigger_modo: 'contiene', trigger_valor: '', canales: ['whatsapp'] })
       await cargarFlujos()
       // Abrir en editor con URL
       navegarA('flujos', { sub: 'editor', id: result.flujo.id })
@@ -289,15 +298,101 @@ export default function FlujosView() {
                 {TRIGGER_TIPOS.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
               </select>
             </label>
+
+            {/* Descripcion del trigger: Primer mensaje */}
+            {nuevoFlujo.trigger_tipo === 'first_message' && (
+              <div className="trigger-desc-box">
+                <p className="trigger-desc-text">
+                  El flujo se activa automaticamente cuando llega <strong>cualquier mensaje</strong> de un cliente que no tiene una conversacion activa.
+                  Funciona en todos los canales: WhatsApp, Instagram DM y Web Chat.
+                </p>
+                <p className="trigger-desc-text" style={{ marginTop: 6 }}>
+                  Se activa en dos situaciones:
+                </p>
+                <ul className="trigger-desc-list">
+                  <li><strong>Primera vez:</strong> El cliente escribe por primera vez y no existe historial previo.</li>
+                  <li><strong>Conversacion cerrada:</strong> El cliente vuelve a escribir despues de que su conversacion anterior fue cerrada (por fin de flujo, por un ejecutivo, o por inactividad).</li>
+                </ul>
+                <p className="trigger-desc-ejemplo">
+                  <strong>Ejemplo:</strong> Un cliente nuevo escribe "Hola" por WhatsApp → el flujo de bienvenida arranca. Semanas despues, el mismo cliente escribe "Necesito ayuda" y como su conversacion anterior ya estaba cerrada, el flujo vuelve a activarse.
+                </p>
+              </div>
+            )}
+
+            {/* Configuracion del trigger: Palabra clave */}
             {nuevoFlujo.trigger_tipo === 'keyword' && (
-              <label className="flow-field">
-                <span>Palabras clave (separadas por |)</span>
-                <input
-                  value={nuevoFlujo.trigger_valor}
-                  onChange={e => setNuevoFlujo(prev => ({ ...prev, trigger_valor: e.target.value }))}
-                  placeholder="agendar|cita|reunion"
-                />
-              </label>
+              <>
+                <label className="flow-field">
+                  <span>Modo de coincidencia</span>
+                  <select
+                    value={nuevoFlujo.trigger_modo || 'contiene'}
+                    onChange={e => setNuevoFlujo(prev => ({ ...prev, trigger_modo: e.target.value }))}
+                  >
+                    {TRIGGER_MODOS.map(m => <option key={m.value} value={m.value}>{m.label}</option>)}
+                  </select>
+                </label>
+
+                <div className="trigger-desc-box">
+                  {nuevoFlujo.trigger_modo === 'contiene' ? (
+                    <p className="trigger-desc-text">
+                      El flujo se activa si el mensaje del cliente <strong>contiene</strong> alguna de las palabras clave configuradas, sin importar el resto del texto. No distingue mayusculas/minusculas.
+                    </p>
+                  ) : (
+                    <p className="trigger-desc-text">
+                      El flujo se activa solo si el mensaje del cliente es <strong>exactamente igual</strong> a una de las palabras clave configuradas (ignorando mayusculas/minusculas y espacios extra).
+                    </p>
+                  )}
+
+                  <div className="trigger-syntax-guide">
+                    <p className="trigger-syntax-title">Como combinar palabras clave:</p>
+
+                    <div className="trigger-syntax-row">
+                      <code className="trigger-syntax-code">agendar|cita|reunion</code>
+                      <span className="trigger-syntax-op">|</span>
+                      <span className="trigger-syntax-label">= O (cualquiera)</span>
+                    </div>
+                    <p className="trigger-syntax-explain">
+                      {nuevoFlujo.trigger_modo === 'contiene'
+                        ? 'Activa si el mensaje contiene "agendar" O "cita" O "reunion". Ej: "Quiero agendar una cita" activa el flujo.'
+                        : 'Activa si el mensaje es exactamente "agendar" O "cita" O "reunion".'}
+                    </p>
+
+                    <div className="trigger-syntax-row">
+                      <code className="trigger-syntax-code">precio+premium</code>
+                      <span className="trigger-syntax-op">+</span>
+                      <span className="trigger-syntax-label">= Y (todas juntas)</span>
+                    </div>
+                    <p className="trigger-syntax-explain">
+                      {nuevoFlujo.trigger_modo === 'contiene'
+                        ? 'Activa solo si el mensaje contiene "precio" Y "premium" a la vez. Ej: "Cual es el precio del plan premium?" activa el flujo, pero "Cual es el precio?" sola NO.'
+                        : 'Activa solo si el mensaje completo es exactamente "precio premium" (ambas palabras deben estar).'}
+                    </p>
+
+                    <div className="trigger-syntax-row">
+                      <code className="trigger-syntax-code">(agendar|reservar)+cita</code>
+                      <span className="trigger-syntax-op">( ) + |</span>
+                      <span className="trigger-syntax-label">= Combinado</span>
+                    </div>
+                    <p className="trigger-syntax-explain">
+                      {nuevoFlujo.trigger_modo === 'contiene'
+                        ? 'Activa si el mensaje contiene ("agendar" O "reservar") Y ademas contiene "cita". Ej: "Quiero reservar una cita" activa, pero "Quiero reservar mesa" NO.'
+                        : 'Activa si el mensaje es exactamente ("agendar" O "reservar") Y "cita".'}
+                    </p>
+                  </div>
+                </div>
+
+                <label className="flow-field trigger-keyword-input">
+                  <span>Palabras clave</span>
+                  <input
+                    value={nuevoFlujo.trigger_valor}
+                    onChange={e => setNuevoFlujo(prev => ({ ...prev, trigger_valor: e.target.value }))}
+                    placeholder="agendar|cita|reunion"
+                  />
+                  <span className="trigger-keyword-hint">
+                    Usa <code>|</code> para O, <code>+</code> para Y, <code>( )</code> para agrupar
+                  </span>
+                </label>
+              </>
             )}
             <div className="flow-field">
               <span>Canales</span>

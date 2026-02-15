@@ -13,6 +13,7 @@ const viewTitles = {
   chat: 'Chat',
   tareas: 'Tareas',
   flujos: 'Flujos',
+  agentes: 'Agentes',
   entrenador: 'Entrenador',
   informes: 'Informes',
   'dashboard-live': 'Chat en Vivo',

@@ -2,6 +2,167 @@
 
 import { useState, useEffect } from 'react'
 
+// Documentacion detallada por tipo de nodo
+const NODE_DOCS = {
+  inicio: {
+    titulo: 'Nodo Inicio',
+    descripcion: 'Es el punto de entrada obligatorio de todo flujo. Define como y cuando se activa el flujo automaticamente. Cada flujo tiene exactamente un nodo inicio que no se puede eliminar.',
+    comoUsarlo: 'Se configura al crear el flujo (nombre, trigger y canales). Hay dos tipos de trigger:\n\n- Palabra clave: Se activa cuando el mensaje del cliente coincide con las palabras configuradas (contiene o es igual). Puedes combinar varias con | (O) y + (Y).\n- Primer mensaje: Se activa con cualquier mensaje de un cliente sin conversacion activa (primera vez o despues de cerrar).\n\nNo necesitas conectar nada antes de este nodo, solo despues.',
+    variables: [
+      { nombre: '{{canal}}', desc: 'Canal por donde llego el mensaje (whatsapp, instagram, web)' },
+      { nombre: '{{telefono_cliente}}', desc: 'Numero de telefono del cliente (WhatsApp)' },
+      { nombre: '{{nombre_cliente}}', desc: 'Nombre del cliente si esta disponible' },
+      { nombre: '{{mensaje_original}}', desc: 'Texto del mensaje que activo el trigger' }
+    ],
+    ejemplo: 'Trigger "Palabra clave" con modo "contiene" y valor "agendar|cita" → cuando un cliente escribe "Quiero agendar una cita" por WhatsApp, el flujo arranca. Trigger "Primer mensaje" → cualquier mensaje de un cliente nuevo o con conversacion cerrada activa el flujo.'
+  },
+  mensaje: {
+    titulo: 'Enviar Mensaje',
+    descripcion: 'Envia un mensaje al cliente por el canal activo. Puede ser texto simple, texto con botones interactivos (max 3), o una lista de opciones. Los botones permiten que el cliente responda con un solo tap.',
+    comoUsarlo: '1. Elige el tipo de mensaje (texto, con botones, o lista).\n2. Escribe el texto del mensaje. Puedes usar {{variable}} para interpolar datos dinamicos.\n3. Si elegiste "Con botones", agrega hasta 3 botones con texto corto (max 20 caracteres).\n4. Conecta las salidas: si tiene botones, cada boton genera un camino diferente en el flujo.',
+    variables: [
+      { nombre: '{{nombre_cliente}}', desc: 'Nombre del cliente' },
+      { nombre: '{{email_cliente}}', desc: 'Email capturado previamente' },
+      { nombre: '{{cualquier_variable}}', desc: 'Cualquier variable guardada antes en el flujo' }
+    ],
+    ejemplo: 'Mensaje con botones: "Hola {{nombre_cliente}}, que tipo de reunion prefieres?" con botones: [Presencial] [Videollamada] [Telefonica]. Cada boton dirige a un camino distinto del flujo.'
+  },
+  pregunta: {
+    titulo: 'Hacer Pregunta',
+    descripcion: 'Envia una pregunta al cliente y espera su respuesta. La respuesta se guarda automaticamente en una variable que puedes usar despues en otros nodos. Soporta validacion: si la respuesta no cumple el formato, se vuelve a preguntar.',
+    comoUsarlo: '1. Escribe la pregunta que quieres hacer.\n2. Selecciona el tipo de respuesta esperada (texto libre, email, telefono, numero, fecha, opcion multiple).\n3. Define el nombre de la variable donde se guardara la respuesta.\n4. Opcionalmente activa "Campo requerido" y un mensaje de error personalizado.\n5. El flujo se pausa hasta que el cliente responda.',
+    variables: [
+      { nombre: 'variable_destino', desc: 'La variable donde se guarda la respuesta (tu la defines)' },
+      { nombre: '{{ultima_respuesta}}', desc: 'Siempre contiene la ultima respuesta del cliente' }
+    ],
+    ejemplo: 'Pregunta: "Cual es tu email para enviarte la confirmacion?" → tipo: email → variable: email_cliente. Si el cliente escribe algo que no es email, se muestra el mensaje de error y se repite la pregunta.'
+  },
+  condicion: {
+    titulo: 'Condicion (Si/No)',
+    descripcion: 'Evalua una variable y bifurca el flujo en dos caminos: uno cuando la condicion se cumple (Si) y otro cuando no (No). Es el nodo clave para crear flujos inteligentes con logica de decisiones.',
+    comoUsarlo: '1. Indica que variable quieres evaluar (ej: tipo_reunion).\n2. Elige el operador: igual, no igual, contiene, no vacio, vacio, mayor que, menor que, regex.\n3. Si el operador lo requiere, escribe el valor a comparar.\n4. Conecta DOS salidas desde este nodo: una para "Si" (true) y otra para "No" (false).',
+    variables: [
+      { nombre: 'variable', desc: 'Cualquier variable guardada previamente en el flujo' }
+    ],
+    ejemplo: 'Variable: "tipo_reunion", Operador: "Es igual a", Valor: "presencial" → Si el cliente eligio presencial, va por el camino "Si" (se pide direccion). Si eligio otra cosa, va por el camino "No" (se pide link de Zoom).'
+  },
+  guardar_variable: {
+    titulo: 'Guardar Variable',
+    descripcion: 'Asigna un valor a una variable del flujo sin interaccion con el cliente. Util para setear valores por defecto, calcular campos derivados, o preparar datos antes de usarlos en otros nodos.',
+    comoUsarlo: '1. Define el nombre de la variable (ej: tipo_reunion).\n2. Escribe el valor: puede ser texto fijo ("presencial") o una referencia a otra variable ({{ultima_respuesta}}).\n3. Elige el tipo: "Literal" para texto fijo, "Sistema" para valores como fecha_actual, hora_actual.',
+    variables: [
+      { nombre: 'variable', desc: 'Nombre de la variable que estas creando/modificando' },
+      { nombre: '{{otra_variable}}', desc: 'Puedes referenciar variables existentes en el valor' }
+    ],
+    ejemplo: 'Variable: "estado_lead", Valor: "calificado", Tipo: Literal → Marca al lead como calificado para usarlo despues en una condicion o al guardar en base de datos.'
+  },
+  guardar_bd: {
+    titulo: 'Guardar en Base de Datos',
+    descripcion: 'Guarda informacion en la tabla base_cuentas de Supabase. Crea un nuevo registro con la categoria, clave y valor que definas. Ideal para guardar leads, contactos o cualquier dato recopilado durante el flujo.',
+    comoUsarlo: '1. La tabla por defecto es "base_cuentas" (la principal del sistema).\n2. Define la categoria del registro (ej: "lead", "contacto", "cita").\n3. En "Clave" pon el identificador: normalmente {{nombre_cliente}} o {{telefono_cliente}}.\n4. En "Valor" pon toda la informacion recopilada usando variables: "Email: {{email_cliente}}, Tel: {{telefono_cliente}}".',
+    variables: [
+      { nombre: '{{cualquier_variable}}', desc: 'Todas las variables del flujo disponibles para clave y valor' }
+    ],
+    ejemplo: 'Categoria: "lead", Clave: "{{nombre_cliente}}", Valor: "Email: {{email_cliente}}, Tipo reunion: {{tipo_reunion}}, Canal: {{canal}}" → Crea un registro en la base de datos con toda la info del lead.'
+  },
+  buscar_conocimiento: {
+    titulo: 'Buscar en Conocimiento',
+    descripcion: 'Busca informacion relevante en la base de conocimiento de la marca (creada con el Entrenador). Permite que la IA responda con informacion precisa sobre productos, servicios, precios, politicas, etc.',
+    comoUsarlo: '1. Define la consulta: normalmente {{ultima_respuesta}} para buscar lo que pregunto el cliente.\n2. Opcionalmente filtra por categorias (productos, precios, horarios, etc.).\n3. Define donde guardar el resultado (variable_destino).\n4. Ajusta max resultados (1-20). Mas resultados = mas contexto pero mas lento.\n5. Conecta un nodo "Respuesta IA" despues para que la IA use este conocimiento.',
+    variables: [
+      { nombre: '{{ultima_respuesta}}', desc: 'Lo que pregunto el cliente (usado como consulta)' },
+      { nombre: 'variable_destino', desc: 'Variable donde se guarda el resultado de la busqueda' }
+    ],
+    ejemplo: 'Consulta: "{{ultima_respuesta}}", Categorias: "productos, precios", Variable: "info_producto" → Si el cliente pregunta "Cuanto cuesta el plan premium?", busca en conocimiento y guarda la info relevante en info_producto.'
+  },
+  respuesta_ia: {
+    titulo: 'Respuesta con IA',
+    descripcion: 'Genera una respuesta inteligente usando IA (OpenAI). Puede usar el conocimiento de marca buscado previamente y las variables del flujo como contexto. Ideal para respuestas personalizadas y naturales.',
+    comoUsarlo: '1. Escribe instrucciones claras para la IA: que tono usar, que informacion incluir, limites de la respuesta.\n2. Activa "Usar conocimiento del entrenador" si quieres que use info de la base de conocimiento.\n3. Activa "Incluir variables del flujo" para que la IA sepa el nombre del cliente, sus respuestas, etc.\n4. Combina con "Buscar conocimiento" antes para respuestas mas precisas.',
+    variables: [
+      { nombre: 'Todas las variables', desc: 'La IA recibe todas las variables del flujo como contexto' },
+      { nombre: 'resultado_busqueda', desc: 'Si buscaste conocimiento antes, la IA lo usa automaticamente' }
+    ],
+    ejemplo: 'Instrucciones: "Responde sobre el producto que pregunto el cliente usando la informacion encontrada. Se amable, usa el nombre del cliente. Maximo 3 oraciones." → La IA genera: "Hola Juan! El Plan Premium cuesta $49/mes e incluye soporte prioritario."'
+  },
+  reconocer_respuesta: {
+    titulo: 'Reconocer Respuesta (IA)',
+    descripcion: 'Usa inteligencia artificial para ENTENDER lo que dice el cliente y tomar decisiones inteligentes. A diferencia del nodo "Condicion" que compara texto literalmente, este nodo comprende el significado del mensaje. Puede clasificar la respuesta en multiples caminos y ademas extraer datos automaticamente (nombres, telefonos, emails, etc.).',
+    comoUsarlo: '1. Escribe instrucciones claras para la IA: que debe buscar o interpretar del mensaje.\n2. "Variable a analizar" indica que texto evaluar (por defecto ultima_respuesta).\n3. Agrega "Salidas posibles": cada salida es un camino diferente que puede tomar el flujo. La IA elige UNA basandose en lo que dijo el cliente.\n4. Opcionalmente agrega "Extracciones": variables que la IA debe extraer del texto (ej: numero de telefono, nombre, email).\n5. Conecta cada salida a un nodo diferente. Las conexiones se crean con tipo "salida_ia".',
+    variables: [
+      { nombre: 'variable_origen', desc: 'El texto que la IA analiza (por defecto ultima_respuesta)' },
+      { nombre: 'Extracciones', desc: 'Variables que la IA extrae automaticamente del texto del cliente' },
+      { nombre: 'salida elegida', desc: 'La IA clasifica el mensaje y el flujo sigue por la salida correspondiente' }
+    ],
+    ejemplo: 'Instrucciones: "Reconoce si el cliente entrego su numero de telefono"\nSalidas: "Entrego numero" / "No entrego numero" / "Pide mas info"\nExtracciones: telefono_cliente → "Extrae el numero si lo menciono"\n\nCliente dice: "Si, mi numero es 56912345678" → La IA elige "Entrego numero" y guarda 56912345678 en telefono_cliente.\nCliente dice: "Primero quiero saber los precios" → La IA elige "Pide mas info".'
+  },
+  crear_tarea: {
+    titulo: 'Crear Tarea',
+    descripcion: 'Crea automaticamente una tarea en el sistema de tareas del panel admin. Util para que el equipo haga seguimiento: llamar al lead, enviar propuesta, confirmar cita, etc. La tarea aparece en el dashboard del ejecutivo asignado.',
+    comoUsarlo: '1. Define el titulo de la tarea (soporta variables: "Contactar a {{nombre_cliente}}").\n2. Escribe una descripcion con todos los datos relevantes del flujo.\n3. Selecciona la prioridad (alta, media, baja).\n4. La tarea se asigna automaticamente al ejecutivo disponible.',
+    variables: [
+      { nombre: '{{nombre_cliente}}', desc: 'Nombre del lead/cliente' },
+      { nombre: '{{telefono_cliente}}', desc: 'Telefono para contacto' },
+      { nombre: '{{canal}}', desc: 'Canal de origen' },
+      { nombre: '{{cualquier_variable}}', desc: 'Cualquier variable del flujo' }
+    ],
+    ejemplo: 'Titulo: "Llamar a {{nombre_cliente}} - Lead calificado", Descripcion: "Lead desde {{canal}}. Email: {{email_cliente}}. Interes en: {{tipo_reunion}}", Prioridad: Alta → Se crea la tarea y el ejecutivo la ve en su panel.'
+  },
+  transferir_humano: {
+    titulo: 'Transferir a Humano',
+    descripcion: 'Transfiere la conversacion a un ejecutivo humano en el Dashboard Live. El flujo se pausa y un agente real toma el control. Ideal cuando el cliente necesita atencion personalizada o el flujo no puede resolver su caso.',
+    comoUsarlo: '1. Escribe el mensaje que vera el cliente mientras espera (ej: "Te conecto con un ejecutivo...").\n2. Opcionalmente escribe un mensaje para el ejecutivo con contexto del caso.\n3. La conversacion aparece en Dashboard Live como "transferida".\n4. El ejecutivo puede ver todo el historial del flujo y las variables recopiladas.',
+    variables: [
+      { nombre: '{{nombre_cliente}}', desc: 'Se incluye automaticamente en la notificacion al ejecutivo' },
+      { nombre: '{{canal}}', desc: 'Canal de origen para que el ejecutivo sepa por donde responder' },
+      { nombre: '{{todas_las_variables}}', desc: 'El ejecutivo ve todas las variables del flujo' }
+    ],
+    ejemplo: 'Mensaje al usuario: "Entiendo, te estoy conectando con un ejecutivo que te ayudara con esto. Por favor espera un momento." Mensaje al ejecutivo: "Lead {{nombre_cliente}} desde {{canal}} necesita ayuda con {{tipo_consulta}}."'
+  },
+  agendar_cita: {
+    titulo: 'Agendar Cita',
+    descripcion: 'Crea un evento en Google Calendar con los datos recopilados en el flujo. Requiere que la marca tenga Google Calendar conectado desde la seccion de Integraciones. Automatiza completamente el agendamiento.',
+    comoUsarlo: '1. Define el titulo de la cita (soporta variables).\n2. Configura la duracion en minutos (15-240).\n3. Escribe una descripcion opcional para el evento.\n4. IMPORTANTE: Antes de este nodo, debes haber recopilado las variables fecha_cita y hora_cita usando nodos "Pregunta".\n5. Requiere Google Calendar conectado en Configuracion > Integraciones.',
+    variables: [
+      { nombre: 'fecha_cita', desc: 'REQUERIDA - Fecha de la cita (formato YYYY-MM-DD)' },
+      { nombre: 'hora_cita', desc: 'REQUERIDA - Hora de la cita (formato HH:MM)' },
+      { nombre: '{{nombre_cliente}}', desc: 'Para el titulo del evento' },
+      { nombre: '{{email_cliente}}', desc: 'Para enviar invitacion por correo' }
+    ],
+    ejemplo: 'Titulo: "Cita con {{nombre_cliente}}", Duracion: 30 min, Descripcion: "Reunion {{tipo_reunion}} - Lead desde {{canal}}" → Crea evento en Google Calendar para la fecha y hora indicadas por el cliente.'
+  },
+  usar_agente: {
+    titulo: 'Usar Agente IA',
+    descripcion: 'Transfiere el control completo de la conversacion a un agente IA autonomo. El agente piensa, entiende contexto, y persigue un objetivo usando herramientas. A diferencia de un flujo lineal, el agente se adapta a lo que dice el cliente y toma decisiones inteligentes.',
+    comoUsarlo: '1. Selecciona el agente que manejara la conversacion (debe estar en estado "activo").\n2. Opcionalmente escribe un mensaje de transicion para el cliente.\n3. Cuando el flujo llega a este nodo, el agente toma control total.\n4. El agente responde mensaje a mensaje hasta cumplir su objetivo o ser cerrado manualmente.\n5. Este es un nodo TERMINAL: no tiene salida. El agente decide cuando finalizar.',
+    variables: [
+      { nombre: 'agente_id', desc: 'ID del agente seleccionado' },
+      { nombre: 'mensaje_transicion', desc: 'Mensaje que se envia al cliente antes de transferir al agente' }
+    ],
+    ejemplo: 'Un flujo detecta que el cliente tiene dudas academicas (via reconocer_respuesta). El nodo "Usar Agente" activa al "Encargado Academico", que tiene acceso a conocimiento sobre campus, horarios y profesores. El agente conversa libremente con el cliente hasta resolver su duda.'
+  },
+  esperar: {
+    titulo: 'Esperar Respuesta',
+    descripcion: 'Pausa el flujo y espera a que el cliente envie un nuevo mensaje. A diferencia de "Pregunta", no valida el formato de la respuesta. Util cuando necesitas una respuesta abierta o el cliente necesita tiempo para decidir.',
+    comoUsarlo: '1. Opcionalmente escribe un mensaje que se envia antes de esperar (ej: "Toma tu tiempo, escribe cuando estes listo").\n2. Define la variable donde guardar la respuesta del cliente.\n3. El flujo queda pausado indefinidamente hasta que el cliente responda.\n4. Cuando el cliente responde, el flujo continua automaticamente por la conexion de salida.',
+    variables: [
+      { nombre: 'variable_destino', desc: 'Variable donde se guarda la respuesta (tu la defines)' },
+      { nombre: '{{ultima_respuesta}}', desc: 'Siempre contiene la ultima respuesta del cliente' }
+    ],
+    ejemplo: 'Mensaje: "Te enviamos la propuesta por email. Cuando la revises, escribenos aqui que te parecio." Variable: "feedback_propuesta" → El flujo espera dias si es necesario. Cuando el cliente responde, su mensaje se guarda en feedback_propuesta.'
+  },
+  fin: {
+    titulo: 'Fin del Flujo',
+    descripcion: 'Marca el final de una rama del flujo. Envia un mensaje de despedida opcional y ejecuta una accion final: cerrar la conversacion, volver al menu principal, o reiniciar el flujo desde cero.',
+    comoUsarlo: '1. Escribe un mensaje de despedida (opcional pero recomendado).\n2. Elige la accion final:\n   - "Cerrar conversacion": Termina todo, la proxima vez el cliente inicia desde cero.\n   - "Volver al menu": Regresa al menu principal (si existe un flujo tipo menu).\n   - "Reiniciar flujo": Vuelve a ejecutar este mismo flujo desde el inicio.',
+    variables: [
+      { nombre: '{{nombre_cliente}}', desc: 'Para personalizar la despedida' },
+      { nombre: '{{cualquier_variable}}', desc: 'Todas las variables del flujo para el mensaje final' }
+    ],
+    ejemplo: 'Mensaje: "Listo {{nombre_cliente}}, tu cita quedo agendada para {{fecha_cita}} a las {{hora_cita}}. Te enviamos la confirmacion a {{email_cliente}}. Que tengas un excelente dia!", Accion: Cerrar conversacion.'
+  }
+}
+
 const TIPOS_MENSAJE = [
   { value: 'texto', label: 'Texto simple' },
   { value: 'botones', label: 'Con botones (max 3)' },
@@ -33,6 +194,53 @@ const CATEGORIAS_CONOCIMIENTO = [
   'tono_voz', 'competencia', 'promociones', 'horarios', 'politicas',
   'contenido', 'faq', 'otro'
 ]
+
+function NodeDocSection({ tipo }) {
+  const [abierto, setAbierto] = useState(false)
+  const doc = NODE_DOCS[tipo]
+  if (!doc) return null
+
+  return (
+    <div className="node-doc-section">
+      <button
+        className={`node-doc-toggle ${abierto ? 'node-doc-toggle-open' : ''}`}
+        onClick={() => setAbierto(!abierto)}
+      >
+        <span className="node-doc-toggle-icon">{abierto ? '▼' : '▶'}</span>
+        <span>Como se usa</span>
+      </button>
+      {abierto && (
+        <div className="node-doc-content">
+          <div className="node-doc-block">
+            <h4 className="node-doc-subtitle">{doc.titulo}</h4>
+            <p className="node-doc-text">{doc.descripcion}</p>
+          </div>
+          <div className="node-doc-block">
+            <h4 className="node-doc-subtitle">Instrucciones</h4>
+            <p className="node-doc-text node-doc-pre">{doc.comoUsarlo}</p>
+          </div>
+          {doc.variables && doc.variables.length > 0 && (
+            <div className="node-doc-block">
+              <h4 className="node-doc-subtitle">Variables disponibles</h4>
+              <div className="node-doc-vars">
+                {doc.variables.map((v, i) => (
+                  <div key={i} className="node-doc-var">
+                    <code className="node-doc-var-name">{v.nombre}</code>
+                    <span className="node-doc-var-desc">{v.desc}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+          <div className="node-doc-block">
+            <h4 className="node-doc-subtitle">Ejemplo</h4>
+            <p className="node-doc-text node-doc-ejemplo">{doc.ejemplo}</p>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
 
 export default function NodeInspector({ nodo, onUpdate, onDelete }) {
   const [datos, setDatos] = useState(nodo?.data || {})
@@ -408,6 +616,160 @@ export default function NodeInspector({ nodo, onUpdate, onDelete }) {
           </>
         )}
 
+        {/* RECONOCER RESPUESTA */}
+        {tipo === 'reconocer_respuesta' && (
+          <>
+            <label className="flow-field">
+              <span>Instrucciones para la IA</span>
+              <textarea
+                value={datos.instrucciones || ''}
+                onChange={e => actualizar('instrucciones', e.target.value)}
+                placeholder="Ej: Reconoce si el cliente entrego su numero de telefono en el mensaje"
+                rows={3}
+              />
+            </label>
+            <label className="flow-field">
+              <span>Variable a analizar</span>
+              <input
+                value={datos.variable_origen || ''}
+                onChange={e => actualizar('variable_origen', e.target.value)}
+                placeholder="ultima_respuesta"
+              />
+            </label>
+            <label className="flow-field-check">
+              <input
+                type="checkbox"
+                checked={datos.usar_contexto_completo !== false}
+                onChange={e => actualizar('usar_contexto_completo', e.target.checked)}
+              />
+              <span>Incluir toda la conversacion como contexto</span>
+            </label>
+            <div className="flow-field-info">
+              Si esta activo, la IA recibe todo el historial de la conversacion ademas del ultimo mensaje.
+              Esto le permite entender mejor el contexto de la respuesta del cliente.
+            </div>
+
+            {/* Salidas posibles */}
+            <div className="flow-field">
+              <span>Salidas posibles (caminos del flujo)</span>
+              {(datos.salidas || []).map((salida, i) => (
+                <div key={i} className="flow-reconocer-salida-row">
+                  <input
+                    value={salida.id || ''}
+                    onChange={e => {
+                      const salidas = [...(datos.salidas || [])]
+                      salidas[i] = { ...salidas[i], id: e.target.value }
+                      actualizar('salidas', salidas)
+                    }}
+                    placeholder="id_salida"
+                    style={{ width: 90 }}
+                  />
+                  <input
+                    value={salida.descripcion || ''}
+                    onChange={e => {
+                      const salidas = [...(datos.salidas || [])]
+                      salidas[i] = { ...salidas[i], descripcion: e.target.value }
+                      actualizar('salidas', salidas)
+                    }}
+                    placeholder="Descripcion para la IA"
+                    style={{ flex: 1 }}
+                  />
+                  <button
+                    className="flow-btn-mini"
+                    onClick={() => {
+                      const salidas = [...(datos.salidas || [])]
+                      salidas.splice(i, 1)
+                      actualizar('salidas', salidas)
+                    }}
+                  >x</button>
+                </div>
+              ))}
+              <button
+                className="flow-btn-add"
+                onClick={() => {
+                  const salidas = [...(datos.salidas || [])]
+                  salidas.push({ id: `salida_${salidas.length + 1}`, descripcion: '' })
+                  actualizar('salidas', salidas)
+                }}
+              >+ Agregar salida</button>
+            </div>
+
+            {/* Extracciones */}
+            <div className="flow-field">
+              <span>Extraer datos del texto (opcional)</span>
+              {(datos.extracciones || []).map((ext, i) => (
+                <div key={i} className="flow-reconocer-ext-row">
+                  <input
+                    value={ext.variable || ''}
+                    onChange={e => {
+                      const extracciones = [...(datos.extracciones || [])]
+                      extracciones[i] = { ...extracciones[i], variable: e.target.value }
+                      actualizar('extracciones', extracciones)
+                    }}
+                    placeholder="variable"
+                    style={{ width: 100 }}
+                  />
+                  <input
+                    value={ext.instruccion || ''}
+                    onChange={e => {
+                      const extracciones = [...(datos.extracciones || [])]
+                      extracciones[i] = { ...extracciones[i], instruccion: e.target.value }
+                      actualizar('extracciones', extracciones)
+                    }}
+                    placeholder="Que extraer: ej. el numero de telefono"
+                    style={{ flex: 1 }}
+                  />
+                  <button
+                    className="flow-btn-mini"
+                    onClick={() => {
+                      const extracciones = [...(datos.extracciones || [])]
+                      extracciones.splice(i, 1)
+                      actualizar('extracciones', extracciones)
+                    }}
+                  >x</button>
+                </div>
+              ))}
+              <button
+                className="flow-btn-add"
+                onClick={() => {
+                  const extracciones = [...(datos.extracciones || [])]
+                  extracciones.push({ variable: '', instruccion: '' })
+                  actualizar('extracciones', extracciones)
+                }}
+              >+ Agregar extraccion</button>
+            </div>
+          </>
+        )}
+
+        {/* USAR AGENTE */}
+        {tipo === 'usar_agente' && (
+          <>
+            <label className="flow-field">
+              <span>Agente (ID)</span>
+              <input
+                type="number"
+                value={datos.agente_id || ''}
+                onChange={e => actualizar('agente_id', e.target.value ? parseInt(e.target.value) : null)}
+                placeholder="ID del agente (ver en seccion Agentes)"
+              />
+            </label>
+            <label className="flow-field">
+              <span>Mensaje de transicion</span>
+              <textarea
+                value={datos.mensaje_transicion || ''}
+                onChange={e => actualizar('mensaje_transicion', e.target.value)}
+                placeholder="Te voy a conectar con nuestro asistente especializado..."
+                rows={2}
+              />
+            </label>
+            <div className="flow-field-info">
+              El agente tomara control total de la conversacion. Este nodo es terminal:
+              el flujo no continua despues. El agente decide cuando finalizar o un humano
+              puede cerrar la conversacion desde el panel de monitoreo del agente.
+            </div>
+          </>
+        )}
+
         {/* ESPERAR RESPUESTA */}
         {tipo === 'esperar' && (
           <>
@@ -497,6 +859,9 @@ export default function NodeInspector({ nodo, onUpdate, onDelete }) {
             </label>
           </>
         )}
+
+        {/* Seccion de documentacion del nodo */}
+        <NodeDocSection tipo={tipo} />
       </div>
     </div>
   )

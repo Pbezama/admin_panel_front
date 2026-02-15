@@ -476,6 +476,27 @@
 }
 .flow-btn-add:hover { background: #f8fafc; border-color: #94a3b8; }
 
+/* Reconocer respuesta - salidas y extracciones */
+.flow-reconocer-salida-row,
+.flow-reconocer-ext-row {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 4px;
+}
+.flow-reconocer-salida-row input,
+.flow-reconocer-ext-row input {
+  padding: 4px 8px;
+  border: 1px solid #e2e8f0;
+  border-radius: 4px;
+  font-size: 12px;
+}
+.flow-reconocer-salida-row input:first-child {
+  font-family: 'Courier New', monospace;
+  font-size: 11px;
+  background: #fdf2f8;
+  color: #a21caf;
+}
+
 /* ============================================ */
 /* FLOW CANVAS - ReactFlow wrapper (para chat)  */
 /* ============================================ */
@@ -692,25 +713,276 @@
 .flow-ai-chat-send:hover:not(:disabled) { background: #7c3aed; }
 .flow-ai-chat-send:disabled { background: #c4b5fd; cursor: default; }
 
-.flow-ai-chat-done {
-  padding: 10px 14px;
-  border-top: 1px solid #e2e8f0;
-  background: #f0fdf4;
-  font-size: 13px;
-  color: #16a34a;
+.flow-ai-chat-header-right {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  flex-shrink: 0;
+  gap: 6px;
 }
 
 .flow-ai-chat-regenerate {
-  background: none;
-  border: 1px solid #8b5cf6;
-  color: #8b5cf6;
-  padding: 4px 12px;
+  background: rgba(255, 255, 255, 0.15);
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  color: #fff;
+  padding: 3px 10px;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 11px;
+  font-weight: 500;
+}
+.flow-ai-chat-regenerate:hover { background: rgba(255, 255, 255, 0.25); }
+
+/* ============================================ */
+/* TRIGGER DESCRIPTION BOX                      */
+/* ============================================ */
+
+.trigger-desc-box {
+  grid-column: 1 / -1;
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  border-radius: 8px;
+  padding: 12px 14px;
+  margin-top: 2px;
+}
+
+.trigger-desc-text {
+  margin: 0;
+  font-size: 13px;
+  color: #1e40af;
+  line-height: 1.5;
+}
+
+.trigger-desc-text strong {
+  color: #1e3a8a;
+}
+
+.trigger-desc-list {
+  margin: 6px 0 10px 0;
+  padding-left: 20px;
+  font-size: 13px;
+  color: #1e40af;
+  line-height: 1.6;
+}
+
+.trigger-desc-list li {
+  margin-bottom: 4px;
+}
+
+.trigger-desc-list strong {
+  color: #1e3a8a;
+}
+
+.trigger-desc-ejemplo {
+  margin: 8px 0 0 0;
+  font-size: 12px;
+  color: #3b82f6;
+  line-height: 1.45;
+  background: #dbeafe;
+  padding: 8px 10px;
+  border-radius: 5px;
+}
+
+.trigger-desc-ejemplo strong {
+  color: #1e3a8a;
+}
+
+/* Syntax guide */
+.trigger-syntax-guide {
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid #bfdbfe;
+}
+
+.trigger-syntax-title {
+  margin: 0 0 8px 0;
+  font-size: 12px;
+  font-weight: 700;
+  color: #1e3a8a;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.trigger-syntax-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 2px;
+}
+
+.trigger-syntax-code {
+  font-family: 'Courier New', monospace;
+  font-size: 12px;
+  background: #dbeafe;
+  color: #1e3a8a;
+  padding: 3px 8px;
+  border-radius: 4px;
+  font-weight: 600;
+}
+
+.trigger-syntax-op {
+  font-family: 'Courier New', monospace;
+  font-size: 14px;
+  font-weight: 700;
+  color: #7c3aed;
+  min-width: 30px;
+  text-align: center;
+}
+
+.trigger-syntax-label {
+  font-size: 12px;
+  color: #1e40af;
+  font-weight: 500;
+}
+
+.trigger-syntax-explain {
+  margin: 2px 0 12px 0;
+  font-size: 11px;
+  color: #3b82f6;
+  line-height: 1.45;
+  padding-left: 4px;
+}
+
+.trigger-syntax-explain:last-child {
+  margin-bottom: 0;
+}
+
+/* Keyword input hint */
+.trigger-keyword-input {
+  grid-column: 1 / -1;
+}
+
+.trigger-keyword-hint {
+  font-size: 11px !important;
+  font-weight: 400 !important;
+  color: #94a3b8 !important;
+  margin-top: 2px;
+}
+
+.trigger-keyword-hint code {
+  font-family: 'Courier New', monospace;
+  background: #f1f5f9;
+  padding: 1px 5px;
+  border-radius: 3px;
+  font-size: 11px;
+  color: #7c3aed;
+  font-weight: 600;
+}
+
+/* ============================================ */
+/* NODE DOCUMENTATION SECTION (Inspector)       */
+/* ============================================ */
+
+.node-doc-section {
+  margin-top: 6px;
+  border-top: 1px solid #e2e8f0;
+  padding-top: 10px;
+}
+
+.node-doc-toggle {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  padding: 8px 10px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
   border-radius: 6px;
   cursor: pointer;
   font-size: 12px;
+  font-weight: 600;
+  color: #475569;
+  transition: all 0.15s;
 }
-.flow-ai-chat-regenerate:hover { background: #f5f3ff; }
+
+.node-doc-toggle:hover {
+  background: #f1f5f9;
+  border-color: #cbd5e1;
+}
+
+.node-doc-toggle-open {
+  background: #eff6ff;
+  border-color: #93c5fd;
+  color: #1d4ed8;
+}
+
+.node-doc-toggle-icon {
+  font-size: 9px;
+  color: #94a3b8;
+  flex-shrink: 0;
+}
+
+.node-doc-toggle-open .node-doc-toggle-icon {
+  color: #3b82f6;
+}
+
+.node-doc-content {
+  margin-top: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.node-doc-block {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  padding: 10px;
+}
+
+.node-doc-subtitle {
+  margin: 0 0 6px 0;
+  font-size: 11px;
+  font-weight: 700;
+  color: #1e293b;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.node-doc-text {
+  margin: 0;
+  font-size: 12px;
+  color: #475569;
+  line-height: 1.5;
+}
+
+.node-doc-pre {
+  white-space: pre-line;
+}
+
+.node-doc-ejemplo {
+  background: #eff6ff;
+  padding: 8px 10px;
+  border-radius: 5px;
+  border: 1px solid #bfdbfe;
+  color: #1e40af;
+  font-style: italic;
+}
+
+.node-doc-vars {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.node-doc-var {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.node-doc-var-name {
+  font-size: 11px;
+  font-family: 'Courier New', monospace;
+  background: #e0e7ff;
+  color: #4338ca;
+  padding: 2px 6px;
+  border-radius: 3px;
+  display: inline-block;
+  width: fit-content;
+}
+
+.node-doc-var-desc {
+  font-size: 11px;
+  color: #64748b;
+  line-height: 1.4;
+  padding-left: 4px;
+}

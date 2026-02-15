@@ -12,6 +12,8 @@ const NODOS_DISPONIBLES = [
   { tipo: 'crear_tarea', label: 'Crear Tarea', icon: '📋', desc: 'Asignar tarea a equipo', color: '#f97316' },
   { tipo: 'transferir_humano', label: 'Transferir', icon: '🧑‍💼', desc: 'Pasar a ejecutivo humano', color: '#ef4444' },
   { tipo: 'agendar_cita', label: 'Agendar Cita', icon: '📅', desc: 'Crear evento en Google Calendar', color: '#059669' },
+  { tipo: 'reconocer_respuesta', label: 'Reconocer', icon: '🧠', desc: 'IA analiza texto y decide camino', color: '#d946ef' },
+  { tipo: 'usar_agente', label: 'Usar Agente', icon: '🤖', desc: 'Delegar a un agente IA autonomo', color: '#8b5cf6' },
   { tipo: 'esperar', label: 'Esperar Respuesta', icon: '⏳', desc: 'Pausar y esperar respuesta del cliente', color: '#ea580c' },
   { tipo: 'fin', label: 'Fin', icon: '🏁', desc: 'Terminar flujo', color: '#6b7280' }
 ]

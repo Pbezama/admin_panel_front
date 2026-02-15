@@ -31,6 +31,18 @@ const DATOS_DEFAULT = {
   crear_tarea: { titulo: '', descripcion: '', tipo: 'otro', prioridad: 'media', asignar_a: 'auto' },
   transferir_humano: { mensaje_usuario: 'Te estoy conectando con un ejecutivo...', mensaje_ejecutivo: '' },
   agendar_cita: { titulo: '', duracion_minutos: 30, descripcion: '' },
+  reconocer_respuesta: {
+    instrucciones: '',
+    variable_origen: 'ultima_respuesta',
+    usar_contexto_completo: true,
+    salidas: [
+      { id: 'salida_1', descripcion: 'Entrego la informacion' },
+      { id: 'salida_2', descripcion: 'No entrego la informacion' }
+    ],
+    extracciones: [],
+    temperatura: 0.3
+  },
+  usar_agente: { agente_id: null, mensaje_transicion: 'Te voy a conectar con nuestro asistente especializado...' },
   esperar: { mensaje_espera: '', variable_destino: '' },
   fin: { mensaje_despedida: '', accion: 'cerrar' }
 }
@@ -149,6 +161,7 @@ export default function FlowCanvas({ flujo, onSave, guardando, marcaNombre }) {
         else if (e.condicion.tipo === 'resultado_false') label = 'No'
         else if (e.condicion.tipo === 'respuesta_exacta') label = e.condicion.valor || ''
         else if (e.condicion.tipo === 'respuesta_contiene') label = `~${e.condicion.valor || ''}`
+        else if (e.condicion.tipo === 'salida_ia') label = e.condicion.descripcion || e.condicion.valor || ''
       }
 
       return {
@@ -248,7 +261,8 @@ export default function FlowCanvas({ flujo, onSave, guardando, marcaNombre }) {
                   inicio: '#22c55e', mensaje: '#3b82f6', pregunta: '#f59e0b',
                   condicion: '#ec4899', guardar_variable: '#6366f1', guardar_bd: '#10b981',
                   buscar_conocimiento: '#eab308', respuesta_ia: '#8b5cf6',
-                  crear_tarea: '#f97316', transferir_humano: '#ef4444', agendar_cita: '#059669', esperar: '#ea580c', fin: '#6b7280'
+                  crear_tarea: '#f97316', transferir_humano: '#ef4444', agendar_cita: '#059669',
+                  reconocer_respuesta: '#d946ef', usar_agente: '#8b5cf6', esperar: '#ea580c', fin: '#6b7280'
                 }
                 return colores[n.type] || '#999'
               }}
@@ -261,6 +275,8 @@ export default function FlowCanvas({ flujo, onSave, guardando, marcaNombre }) {
           flujo={flujo}
           onFlowGenerated={handleFlowGenerated}
           marcaNombre={marcaNombre}
+          nodosActuales={nodes}
+          edgesActuales={edges}
         />
       </div>
 
