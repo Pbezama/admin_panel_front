@@ -1,8 +1,10 @@
 'use client'
 
-import { Handle, Position } from '@xyflow/react'
+import { useEffect } from 'react'
+import { Handle, Position, useUpdateNodeInternals } from '@xyflow/react'
 
 const handleStyle = { width: 8, height: 8 }
+const handleStyleLarge = { width: 10, height: 10, border: '2px solid #fff' }
 
 // Colores por tipo de nodo
 const COLORES = {
@@ -136,7 +138,46 @@ export function InicioNode({ data, selected }) {
   )
 }
 
-export function MensajeNode({ data, selected }) {
+export function MensajeNode({ data, selected, id }) {
+  const updateNodeInternals = useUpdateNodeInternals()
+  const botones = data.botones || []
+
+  useEffect(() => {
+    updateNodeInternals(id)
+  }, [id, botones.length, updateNodeInternals])
+
+  if (botones.length > 0) {
+    return (
+      <div style={{ position: 'relative', paddingBottom: 22 }}>
+        <Handle type="target" position={Position.Top} style={handleStyle} />
+        <BaseNode data={data} tipo="mensaje" selected={selected} />
+        {/* Handles - direct children, no wrapper divs */}
+        {botones.map((b, i) => (
+          <Handle
+            key={`h_${i}`}
+            type="source"
+            position={Position.Bottom}
+            id={`boton_${i}`}
+            style={{ ...handleStyleLarge, left: `${((i + 1) / (botones.length + 1)) * 100}%`, background: '#3b82f6' }}
+          />
+        ))}
+        {/* Labels - separate loop, direct children */}
+        {botones.map((b, i) => {
+          const texto = b.texto || b.title || `Botón ${i + 1}`
+          return (
+            <span
+              key={`l_${i}`}
+              className="flow-handle-label flow-handle-label-msg"
+              style={{ left: `${((i + 1) / (botones.length + 1)) * 100}%` }}
+            >
+              {texto.length > 14 ? texto.substring(0, 14) + '…' : texto}
+            </span>
+          )
+        })}
+      </div>
+    )
+  }
+
   return (
     <div>
       <Handle type="target" position={Position.Top} style={handleStyle} />
@@ -146,7 +187,57 @@ export function MensajeNode({ data, selected }) {
   )
 }
 
-export function PreguntaNode({ data, selected }) {
+export function PreguntaNode({ data, selected, id }) {
+  const updateNodeInternals = useUpdateNodeInternals()
+  const botones = data.botones || []
+
+  useEffect(() => {
+    updateNodeInternals(id)
+  }, [id, data.tipo_respuesta, botones.length, updateNodeInternals])
+
+  if (data.tipo_respuesta === 'opciones_si_no') {
+    return (
+      <div style={{ position: 'relative', paddingBottom: 22 }}>
+        <Handle type="target" position={Position.Top} style={handleStyle} />
+        <BaseNode data={{ ...data, texto: data.texto || 'Pregunta Sí/No' }} tipo="pregunta" selected={selected} />
+        <Handle type="source" position={Position.Bottom} id="si" style={{ ...handleStyleLarge, left: '30%', background: '#22c55e' }} />
+        <Handle type="source" position={Position.Bottom} id="no" style={{ ...handleStyleLarge, left: '70%', background: '#ef4444' }} />
+        <span className="flow-handle-label flow-handle-label-si" style={{ left: '30%' }}>Sí</span>
+        <span className="flow-handle-label flow-handle-label-no" style={{ left: '70%' }}>No</span>
+      </div>
+    )
+  }
+
+  if (data.tipo_respuesta === 'botones' && botones.length > 0) {
+    return (
+      <div style={{ position: 'relative', paddingBottom: 22 }}>
+        <Handle type="target" position={Position.Top} style={handleStyle} />
+        <BaseNode data={{ ...data, texto: data.texto || 'Pregunta con botones' }} tipo="pregunta" selected={selected} />
+        {botones.map((b, i) => (
+          <Handle
+            key={`h_${i}`}
+            type="source"
+            position={Position.Bottom}
+            id={`boton_${i}`}
+            style={{ ...handleStyleLarge, left: `${((i + 1) / (botones.length + 1)) * 100}%`, background: '#f59e0b' }}
+          />
+        ))}
+        {botones.map((b, i) => {
+          const texto = b.texto || b.title || `Opción ${i + 1}`
+          return (
+            <span
+              key={`l_${i}`}
+              className="flow-handle-label flow-handle-label-btn"
+              style={{ left: `${((i + 1) / (botones.length + 1)) * 100}%` }}
+            >
+              {texto.length > 14 ? texto.substring(0, 14) + '…' : texto}
+            </span>
+          )
+        })}
+      </div>
+    )
+  }
+
   return (
     <div>
       <Handle type="target" position={Position.Top} style={handleStyle} />
@@ -158,11 +249,13 @@ export function PreguntaNode({ data, selected }) {
 
 export function CondicionNode({ data, selected }) {
   return (
-    <div>
+    <div style={{ position: 'relative', paddingBottom: 22 }}>
       <Handle type="target" position={Position.Top} style={handleStyle} />
       <BaseNode data={{ texto: `${data.variable || '?'} ${data.operador || '?'} ${data.valor || ''}` }} tipo="condicion" selected={selected} />
-      <Handle type="source" position={Position.Bottom} id="true" style={{ ...handleStyle, left: '30%' }} />
-      <Handle type="source" position={Position.Bottom} id="false" style={{ ...handleStyle, left: '70%' }} />
+      <Handle type="source" position={Position.Bottom} id="true" style={{ ...handleStyleLarge, left: '30%', background: '#22c55e' }} />
+      <Handle type="source" position={Position.Bottom} id="false" style={{ ...handleStyleLarge, left: '70%', background: '#ef4444' }} />
+      <span className="flow-handle-label flow-handle-label-si" style={{ left: '30%' }}>Sí</span>
+      <span className="flow-handle-label flow-handle-label-no" style={{ left: '70%' }}>No</span>
     </div>
   )
 }
@@ -226,26 +319,48 @@ export function TransferirHumanoNode({ data, selected }) {
   )
 }
 
-export function ReconocerRespuestaNode({ data, selected }) {
+export function ReconocerRespuestaNode({ data, selected, id }) {
+  const updateNodeInternals = useUpdateNodeInternals()
   const salidas = data.salidas || []
+
+  useEffect(() => {
+    updateNodeInternals(id)
+  }, [id, salidas.length, updateNodeInternals])
+
   return (
-    <div>
+    <div style={{ position: 'relative', paddingBottom: salidas.length > 0 ? 22 : 0 }}>
       <Handle type="target" position={Position.Top} style={handleStyle} />
       <BaseNode data={{ texto: data.instrucciones || 'Analizar respuesta con IA' }} tipo="reconocer_respuesta" selected={selected} />
       {salidas.length > 0 ? (
-        salidas.map((s, i) => (
-          <Handle
-            key={s.id}
-            type="source"
-            position={Position.Bottom}
-            id={s.id}
-            style={{
-              ...handleStyle,
-              left: `${((i + 1) / (salidas.length + 1)) * 100}%`,
-              background: '#d946ef'
-            }}
-          />
-        ))
+        <>
+          {/* Handles - direct children */}
+          {salidas.map((s, i) => (
+            <Handle
+              key={`h_${s.id}`}
+              type="source"
+              position={Position.Bottom}
+              id={s.id}
+              style={{
+                ...handleStyleLarge,
+                left: `${((i + 1) / (salidas.length + 1)) * 100}%`,
+                background: '#d946ef'
+              }}
+            />
+          ))}
+          {/* Labels - separate loop */}
+          {salidas.map((s, i) => {
+            const desc = s.descripcion || s.id
+            return (
+              <span
+                key={`l_${s.id}`}
+                className="flow-handle-label flow-handle-label-ia"
+                style={{ left: `${((i + 1) / (salidas.length + 1)) * 100}%` }}
+              >
+                {desc.length > 18 ? desc.substring(0, 18) + '…' : desc}
+              </span>
+            )
+          })}
+        </>
       ) : (
         <Handle type="source" position={Position.Bottom} style={handleStyle} />
       )}

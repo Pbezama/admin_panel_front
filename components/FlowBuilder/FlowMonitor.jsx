@@ -91,6 +91,7 @@ export default function FlowMonitor({ onVolver }) {
   const [cargando, setCargando] = useState(true)
   const [cargandoLogs, setCargandoLogs] = useState(false)
   const [nodoSeleccionado, setNodoSeleccionado] = useState(null)
+  const [deteniendo, setDeteniendo] = useState(false)
 
   // Filtros
   const [filtroFlujo, setFiltroFlujo] = useState('')
@@ -152,6 +153,24 @@ export default function FlowMonitor({ onVolver }) {
     setNodoSeleccionado(null)
     await cargarLogs(conv.id)
   }, [cargarLogs])
+
+  const detenerFlujo = useCallback(async () => {
+    if (!seleccionada || deteniendo) return
+    setDeteniendo(true)
+    try {
+      const result = await api.detenerConversacionFlujo(seleccionada.id)
+      if (result.success) {
+        setSeleccionada(prev => ({ ...prev, estado: 'cancelada' }))
+        setConversaciones(prev =>
+          prev.map(c => c.id === seleccionada.id ? { ...c, estado: 'cancelada' } : c)
+        )
+      }
+    } catch (error) {
+      console.error('Error deteniendo flujo:', error)
+    } finally {
+      setDeteniendo(false)
+    }
+  }, [seleccionada, deteniendo])
 
   const recargarTodo = useCallback(async () => {
     await cargarConversaciones()
@@ -423,6 +442,15 @@ export default function FlowMonitor({ onVolver }) {
                 <label>Estado</label>
                 {getEstadoBadge(seleccionada.estado)}
               </div>
+              {seleccionada.estado === 'activa' && (
+                <button
+                  className="monitor-btn-detener"
+                  onClick={detenerFlujo}
+                  disabled={deteniendo}
+                >
+                  {deteniendo ? 'Deteniendo...' : 'Detener flujo'}
+                </button>
+              )}
               <div className="monitor-detail-row">
                 <label>Inicio</label>
                 <span>{formatFecha(seleccionada.creado_en)}</span>

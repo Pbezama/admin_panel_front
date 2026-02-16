@@ -17,6 +17,7 @@ import { nodeTypes } from './nodes/FlowNodes'
 import NodePalette from './NodePalette'
 import NodeInspector from './NodeInspector'
 import FlowAIChat from './FlowAIChat'
+import VariablesPanel from './VariablesPanel'
 import { autoLayoutNodes } from '@/lib/autoLayout'
 
 const DATOS_DEFAULT = {
@@ -66,6 +67,8 @@ export default function FlowCanvas({ flujo, onSave, guardando, marcaNombre }) {
     id: e.id,
     source: e.origen,
     target: e.destino,
+    sourceHandle: e.sourceHandle || null,
+    targetHandle: e.targetHandle || null,
     label: e.label || '',
     markerEnd: { type: MarkerType.ArrowClosed },
     style: { strokeWidth: 2 },
@@ -76,14 +79,73 @@ export default function FlowCanvas({ flujo, onSave, guardando, marcaNombre }) {
   const [edges, setEdges, onEdgesChange] = useEdgesState(edgesIniciales)
 
   const onConnect = useCallback((params) => {
+    // Auto-generar condicion según el tipo de nodo origen y el handle usado
+    let condicion = null
+    let label = ''
+
+    const sourceNode = nodes.find(n => n.id === params.source)
+    if (sourceNode && params.sourceHandle) {
+      switch (sourceNode.type) {
+        case 'condicion':
+          if (params.sourceHandle === 'true') {
+            condicion = { tipo: 'resultado_true' }
+            label = 'Sí'
+          } else if (params.sourceHandle === 'false') {
+            condicion = { tipo: 'resultado_false' }
+            label = 'No'
+          }
+          break
+
+        case 'reconocer_respuesta': {
+          const salida = sourceNode.data.salidas?.find(s => s.id === params.sourceHandle)
+          if (salida) {
+            condicion = { tipo: 'salida_ia', valor: params.sourceHandle, descripcion: salida.descripcion || '' }
+            label = salida.descripcion || params.sourceHandle
+          }
+          break
+        }
+
+        case 'mensaje':
+          if (params.sourceHandle.startsWith('boton_')) {
+            const idx = parseInt(params.sourceHandle.replace('boton_', ''))
+            const boton = sourceNode.data.botones?.[idx]
+            const textoBoton = boton?.texto || boton?.title || ''
+            if (textoBoton) {
+              condicion = { tipo: 'boton', valor: textoBoton }
+              label = textoBoton
+            }
+          }
+          break
+
+        case 'pregunta':
+          if (params.sourceHandle === 'si') {
+            condicion = { tipo: 'boton', valor: 'Sí' }
+            label = 'Sí'
+          } else if (params.sourceHandle === 'no') {
+            condicion = { tipo: 'boton', valor: 'No' }
+            label = 'No'
+          } else if (params.sourceHandle.startsWith('boton_')) {
+            const idx = parseInt(params.sourceHandle.replace('boton_', ''))
+            const boton = sourceNode.data.botones?.[idx]
+            const textoBoton = boton?.texto || boton?.title || ''
+            if (textoBoton) {
+              condicion = { tipo: 'boton', valor: textoBoton }
+              label = textoBoton
+            }
+          }
+          break
+      }
+    }
+
     setEdges((eds) => addEdge({
       ...params,
       id: `edge_${Date.now()}`,
+      label,
       markerEnd: { type: MarkerType.ArrowClosed },
       style: { strokeWidth: 2 },
-      data: { condicion: null }
+      data: { condicion }
     }, eds))
-  }, [setEdges])
+  }, [setEdges, nodes])
 
   const onNodeClick = useCallback((_, node) => {
     setSelectedNode(node)
@@ -268,6 +330,8 @@ export default function FlowCanvas({ flujo, onSave, guardando, marcaNombre }) {
         id: e.id,
         source: e.origen,
         target: e.destino,
+        sourceHandle: e.sourceHandle || null,
+        targetHandle: e.targetHandle || null,
         label,
         markerEnd: { type: MarkerType.ArrowClosed },
         style: { strokeWidth: 2 },
@@ -314,6 +378,8 @@ export default function FlowCanvas({ flujo, onSave, guardando, marcaNombre }) {
       id: e.id,
       origen: e.source,
       destino: e.target,
+      sourceHandle: e.sourceHandle || null,
+      targetHandle: e.targetHandle || null,
       label: e.label || '',
       condicion: e.data?.condicion || null
     }))
@@ -359,6 +425,7 @@ export default function FlowCanvas({ flujo, onSave, guardando, marcaNombre }) {
         </div>
 
         <div className="flow-canvas-reactflow-wrapper" ref={reactFlowWrapper}>
+          <VariablesPanel nodes={nodes} />
           <ReactFlow
             nodes={nodes}
             edges={edges}
