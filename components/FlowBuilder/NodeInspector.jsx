@@ -1,6 +1,8 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { api } from '@/lib/api'
+import { useView } from '@/context/ViewContext'
 
 // Documentacion detallada por tipo de nodo
 const NODE_DOCS = {
@@ -243,11 +245,25 @@ function NodeDocSection({ tipo }) {
 }
 
 export default function NodeInspector({ nodo, onUpdate, onDelete }) {
+  const { navegarA } = useView()
   const [datos, setDatos] = useState(nodo?.data || {})
+  const [agentes, setAgentes] = useState([])
+  const [cargandoAgentes, setCargandoAgentes] = useState(false)
 
   useEffect(() => {
     setDatos(nodo?.data || {})
   }, [nodo?.id])
+
+  // Cargar agentes cuando se selecciona un nodo usar_agente
+  useEffect(() => {
+    if (nodo?.type === 'usar_agente') {
+      setCargandoAgentes(true)
+      api.getAgentes()
+        .then(result => setAgentes(result.agentes || []))
+        .catch(() => setAgentes([]))
+        .finally(() => setCargandoAgentes(false))
+    }
+  }, [nodo?.type, nodo?.id])
 
   if (!nodo) {
     return (
@@ -744,15 +760,57 @@ export default function NodeInspector({ nodo, onUpdate, onDelete }) {
         {/* USAR AGENTE */}
         {tipo === 'usar_agente' && (
           <>
-            <label className="flow-field">
-              <span>Agente (ID)</span>
-              <input
-                type="number"
-                value={datos.agente_id || ''}
-                onChange={e => actualizar('agente_id', e.target.value ? parseInt(e.target.value) : null)}
-                placeholder="ID del agente (ver en seccion Agentes)"
-              />
-            </label>
+            <div className="flow-field">
+              <span>Seleccionar agente</span>
+              {cargandoAgentes ? (
+                <div className="flow-field-info">Cargando agentes...</div>
+              ) : agentes.length > 0 ? (
+                <div className="flow-agente-list">
+                  {agentes.map(ag => {
+                    const seleccionado = datos.agente_id === ag.id
+                    return (
+                      <button
+                        key={ag.id}
+                        type="button"
+                        className={`flow-agente-option ${seleccionado ? 'flow-agente-option-active' : ''}`}
+                        onClick={() => {
+                          actualizar('agente_id', ag.id)
+                          actualizar('agente_nombre', ag.nombre)
+                        }}
+                      >
+                        <span className="flow-agente-option-icon">{ag.icono || '🤖'}</span>
+                        <div className="flow-agente-option-info">
+                          <span className="flow-agente-option-name">{ag.nombre}</span>
+                          <span className="flow-agente-option-estado">
+                            {ag.estado === 'activo' ? '● Activo' : ag.estado === 'borrador' ? '○ Borrador' : '◐ Pausado'}
+                          </span>
+                        </div>
+                        {seleccionado && <span className="flow-agente-option-check">✓</span>}
+                      </button>
+                    )
+                  })}
+                </div>
+              ) : (
+                <div className="flow-agente-empty">
+                  <p>No hay agentes creados</p>
+                  <button
+                    type="button"
+                    className="flow-agente-crear-btn"
+                    onClick={() => navegarA('agentes')}
+                  >
+                    + Crear agente
+                  </button>
+                </div>
+              )}
+            </div>
+
+            {datos.agente_id && (
+              <div className="flow-agente-selected-info">
+                <span className="flow-agente-selected-icon">{datos.agente_icono || agentes.find(a => a.id === datos.agente_id)?.icono || '🤖'}</span>
+                <span>{datos.agente_nombre || agentes.find(a => a.id === datos.agente_id)?.nombre || 'Agente seleccionado'}</span>
+              </div>
+            )}
+
             <label className="flow-field">
               <span>Mensaje de transicion</span>
               <textarea
