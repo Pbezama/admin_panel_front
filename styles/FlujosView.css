@@ -786,6 +786,125 @@
 }
 
 /* ============================================ */
+/* DM MODO PANEL                                */
+/* ============================================ */
+
+.dm-modo-panel {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin: 12px 20px 0;
+  padding: 14px 18px;
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+}
+
+.dm-modo-info {
+  flex: 1;
+}
+
+.dm-modo-titulo {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.dm-modo-icon {
+  font-size: 28px;
+  flex-shrink: 0;
+}
+
+.dm-modo-titulo h4 {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: #1e293b;
+}
+
+.dm-modo-titulo p {
+  margin: 2px 0 0;
+  font-size: 12px;
+  color: #64748b;
+  line-height: 1.4;
+}
+
+.dm-modo-toggle-area {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
+.dm-modo-options {
+  display: flex;
+  gap: 6px;
+  background: #f1f5f9;
+  border-radius: 10px;
+  padding: 4px;
+}
+
+.dm-modo-option {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 8px 16px;
+  border: 2px solid transparent;
+  border-radius: 8px;
+  background: transparent;
+  cursor: pointer;
+  transition: all 0.2s;
+  min-width: 100px;
+}
+
+.dm-modo-option:hover:not(:disabled) {
+  background: #fff;
+}
+
+.dm-modo-option-active {
+  background: #fff;
+  border-color: #3b82f6;
+  box-shadow: 0 1px 3px rgba(59, 130, 246, 0.15);
+}
+
+.dm-modo-option:disabled {
+  opacity: 0.6;
+  cursor: wait;
+}
+
+.dm-modo-option-icon {
+  font-size: 18px;
+}
+
+.dm-modo-option-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: #1e293b;
+}
+
+.dm-modo-option-desc {
+  font-size: 10px;
+  color: #94a3b8;
+}
+
+.dm-modo-option-active .dm-modo-option-label {
+  color: #3b82f6;
+}
+
+.dm-modo-option-active .dm-modo-option-desc {
+  color: #3b82f6;
+}
+
+.dm-modo-saving {
+  font-size: 11px;
+  color: #3b82f6;
+  font-weight: 500;
+}
+
+/* ============================================ */
 /* TRIGGER TIPO SELECTOR - Cards                */
 /* ============================================ */
 

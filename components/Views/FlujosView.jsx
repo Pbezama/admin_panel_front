@@ -31,8 +31,11 @@ export default function FlujosView() {
   const [nuevoFlujo, setNuevoFlujo] = useState({ nombre: '', descripcion: '', trigger_tipo: 'keyword', trigger_modo: 'contiene', trigger_valor: '', canales: ['whatsapp'] })
   const [keywords, setKeywords] = useState([])
   const [keywordInput, setKeywordInput] = useState('')
+  const [dmContinuo, setDmContinuo] = useState(null) // '1' o '2'
+  const [cambiandoDm, setCambiandoDm] = useState(false)
 
   const idMarca = marcaActiva?.id_marca || usuario?.id_marca
+  const esAdmin = usuario?.es_super_admin || usuario?.tipo_usuario === 'admin'
 
   // Sincronizar keywords array → trigger_valor string
   const syncKeywordsToValor = (kws) => {
@@ -59,6 +62,37 @@ export default function FlujosView() {
     if (e.key === 'Enter' || e.key === ',') {
       e.preventDefault()
       agregarKeyword(keywordInput)
+    }
+  }
+
+  // Cargar estado dm_continuo
+  useEffect(() => {
+    if (idMarca) {
+      api.getDmContinuo().then(result => {
+        if (result.success) setDmContinuo(result.dm_continuo)
+      }).catch(() => {})
+    }
+  }, [idMarca])
+
+  const handleToggleDmContinuo = async () => {
+    if (cambiandoDm) return
+    const nuevoModo = dmContinuo === '1' ? '2' : '1'
+    setCambiandoDm(true)
+    try {
+      const result = await api.setDmContinuo(nuevoModo)
+      if (result.success) {
+        setDmContinuo(result.dm_continuo)
+        mostrarMensaje(
+          nuevoModo === '1'
+            ? 'Modo activado: El sistema responde continuamente por DM'
+            : 'Modo activado: El sistema solo responde al comentario y primer DM',
+          'exito'
+        )
+      }
+    } catch (error) {
+      mostrarMensaje('Error cambiando modo: ' + error.message, 'error')
+    } finally {
+      setCambiandoDm(false)
     }
   }
 
@@ -291,6 +325,49 @@ export default function FlujosView() {
       {mensaje && (
         <div className={`flujos-mensaje flujos-mensaje-${mensaje.tipo}`}>
           {mensaje.texto}
+        </div>
+      )}
+
+      {/* Panel de modo DM - solo admin/super admin */}
+      {esAdmin && dmContinuo !== null && vistaActiva === 'lista' && (
+        <div className="dm-modo-panel">
+          <div className="dm-modo-info">
+            <div className="dm-modo-titulo">
+              <span className="dm-modo-icon">{dmContinuo === '1' ? '🔄' : '💬'}</span>
+              <div>
+                <h4>Modo de respuesta por DM</h4>
+                <p>{dmContinuo === '1'
+                  ? 'El sistema responde continuamente a todos los mensajes por DM'
+                  : 'El sistema solo responde al comentario y al primer mensaje por DM'
+                }</p>
+              </div>
+            </div>
+          </div>
+          <div className="dm-modo-toggle-area">
+            <div className="dm-modo-options">
+              <button
+                type="button"
+                className={`dm-modo-option ${dmContinuo === '1' ? 'dm-modo-option-active' : ''}`}
+                onClick={() => { if (dmContinuo !== '1') handleToggleDmContinuo() }}
+                disabled={cambiandoDm}
+              >
+                <span className="dm-modo-option-icon">🔄</span>
+                <span className="dm-modo-option-label">Continuo</span>
+                <span className="dm-modo-option-desc">Responde siempre</span>
+              </button>
+              <button
+                type="button"
+                className={`dm-modo-option ${dmContinuo === '2' ? 'dm-modo-option-active' : ''}`}
+                onClick={() => { if (dmContinuo !== '2') handleToggleDmContinuo() }}
+                disabled={cambiandoDm}
+              >
+                <span className="dm-modo-option-icon">💬</span>
+                <span className="dm-modo-option-label">Solo primero</span>
+                <span className="dm-modo-option-desc">Comentario + 1er DM</span>
+              </button>
+            </div>
+            {cambiandoDm && <span className="dm-modo-saving">Guardando...</span>}
+          </div>
         </div>
       )}
 
