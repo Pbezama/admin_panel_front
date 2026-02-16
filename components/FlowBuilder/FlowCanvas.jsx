@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useCallback, useRef } from 'react'
+import { useState, useCallback, useRef, useEffect } from 'react'
 import {
   ReactFlow,
   Background,
@@ -51,6 +51,8 @@ export default function FlowCanvas({ flujo, onSave, guardando, marcaNombre }) {
   const reactFlowWrapper = useRef(null)
   const [reactFlowInstance, setReactFlowInstance] = useState(null)
   const [selectedNode, setSelectedNode] = useState(null)
+  const [clipboard, setClipboard] = useState(null)
+  const [copyMsg, setCopyMsg] = useState(null)
 
   // Convertir nodos del flujo al formato de React Flow
   const nodosIniciales = (flujo?.nodos || []).map(n => ({
@@ -130,6 +132,104 @@ export default function FlowCanvas({ flujo, onSave, guardando, marcaNombre }) {
     setEdges((eds) => eds.filter(e => e.source !== nodeId && e.target !== nodeId))
     setSelectedNode(null)
   }, [setNodes, setEdges])
+
+  // Copiar nodo seleccionado (Ctrl+C)
+  const handleCopy = useCallback(() => {
+    if (!selectedNode) return
+    // No permitir copiar el nodo inicio
+    if (selectedNode.type === 'inicio') {
+      setCopyMsg('El nodo inicio no se puede copiar')
+      setTimeout(() => setCopyMsg(null), 2000)
+      return
+    }
+    setClipboard({
+      type: selectedNode.type,
+      data: JSON.parse(JSON.stringify(selectedNode.data))
+    })
+    setCopyMsg('Nodo copiado')
+    setTimeout(() => setCopyMsg(null), 2000)
+  }, [selectedNode])
+
+  // Pegar nodo (Ctrl+V)
+  const handlePaste = useCallback(() => {
+    if (!clipboard || !reactFlowInstance) return
+
+    // Calcular posición: al lado del nodo seleccionado o en el centro del viewport
+    let position
+    if (selectedNode) {
+      position = {
+        x: selectedNode.position.x + 200,
+        y: selectedNode.position.y + 80
+      }
+    } else {
+      const viewport = reactFlowInstance.getViewport()
+      const wrapper = reactFlowWrapper.current
+      if (wrapper) {
+        const bounds = wrapper.getBoundingClientRect()
+        position = reactFlowInstance.screenToFlowPosition({
+          x: bounds.left + bounds.width / 2,
+          y: bounds.top + bounds.height / 2
+        })
+      } else {
+        position = { x: 400, y: 300 }
+      }
+    }
+
+    const newNode = {
+      id: `node_${Date.now()}`,
+      type: clipboard.type,
+      position,
+      data: JSON.parse(JSON.stringify(clipboard.data))
+    }
+
+    setNodes((nds) => [...nds, newNode])
+    setSelectedNode(newNode)
+    setCopyMsg('Nodo pegado')
+    setTimeout(() => setCopyMsg(null), 2000)
+  }, [clipboard, selectedNode, reactFlowInstance, setNodes])
+
+  // Duplicar nodo (Ctrl+D)
+  const handleDuplicate = useCallback(() => {
+    if (!selectedNode || selectedNode.type === 'inicio') return
+    const newNode = {
+      id: `node_${Date.now()}`,
+      type: selectedNode.type,
+      position: {
+        x: selectedNode.position.x + 200,
+        y: selectedNode.position.y + 80
+      },
+      data: JSON.parse(JSON.stringify(selectedNode.data))
+    }
+    setNodes((nds) => [...nds, newNode])
+    setSelectedNode(newNode)
+    setCopyMsg('Nodo duplicado')
+    setTimeout(() => setCopyMsg(null), 2000)
+  }, [selectedNode, setNodes])
+
+  // Escuchar atajos de teclado
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      // Ignorar si se está escribiendo en un input/textarea/select
+      const tag = e.target.tagName.toLowerCase()
+      if (tag === 'input' || tag === 'textarea' || tag === 'select' || e.target.isContentEditable) return
+
+      if ((e.ctrlKey || e.metaKey) && e.key === 'c') {
+        e.preventDefault()
+        handleCopy()
+      }
+      if ((e.ctrlKey || e.metaKey) && e.key === 'v') {
+        e.preventDefault()
+        handlePaste()
+      }
+      if ((e.ctrlKey || e.metaKey) && e.key === 'd') {
+        e.preventDefault()
+        handleDuplicate()
+      }
+    }
+
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [handleCopy, handlePaste, handleDuplicate])
 
   // Recibir flujo generado por la IA
   const handleFlowGenerated = useCallback((flujoIA) => {
@@ -230,9 +330,32 @@ export default function FlowCanvas({ flujo, onSave, guardando, marcaNombre }) {
           <button className="flow-btn-save" onClick={handleSave} disabled={guardando}>
             {guardando ? 'Guardando...' : 'Guardar flujo'}
           </button>
-          <span className="flow-canvas-info">
-            {nodes.length} nodos | {edges.length} conexiones
-          </span>
+          <div className="flow-canvas-toolbar-right">
+            {copyMsg && <span className="flow-copy-msg">{copyMsg}</span>}
+            {selectedNode && selectedNode.type !== 'inicio' && (
+              <div className="flow-node-actions">
+                <button className="flow-action-btn" onClick={handleCopy} title="Copiar (Ctrl+C)">
+                  Copiar
+                </button>
+                <button className="flow-action-btn" onClick={handleDuplicate} title="Duplicar (Ctrl+D)">
+                  Duplicar
+                </button>
+                {clipboard && (
+                  <button className="flow-action-btn flow-action-paste" onClick={handlePaste} title="Pegar (Ctrl+V)">
+                    Pegar
+                  </button>
+                )}
+              </div>
+            )}
+            {!selectedNode && clipboard && (
+              <button className="flow-action-btn flow-action-paste" onClick={handlePaste} title="Pegar (Ctrl+V)">
+                Pegar nodo
+              </button>
+            )}
+            <span className="flow-canvas-info">
+              {nodes.length} nodos | {edges.length} conexiones
+            </span>
+          </div>
         </div>
 
         <div className="flow-canvas-reactflow-wrapper" ref={reactFlowWrapper}>

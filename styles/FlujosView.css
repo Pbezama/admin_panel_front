@@ -348,6 +348,61 @@
 .flow-btn-save:disabled { background: #94a3b8; cursor: not-allowed; }
 .flow-canvas-info { font-size: 12px; color: #94a3b8; }
 
+.flow-canvas-toolbar-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.flow-node-actions {
+  display: flex;
+  gap: 4px;
+}
+
+.flow-action-btn {
+  padding: 5px 12px;
+  border: 1px solid #e2e8f0;
+  border-radius: 5px;
+  background: #fff;
+  cursor: pointer;
+  font-size: 12px;
+  color: #475569;
+  font-weight: 500;
+  transition: all 0.15s;
+}
+
+.flow-action-btn:hover {
+  background: #eff6ff;
+  border-color: #93c5fd;
+  color: #3b82f6;
+}
+
+.flow-action-paste {
+  background: #eff6ff;
+  border-color: #93c5fd;
+  color: #3b82f6;
+}
+
+.flow-action-paste:hover {
+  background: #dbeafe;
+}
+
+.flow-copy-msg {
+  font-size: 12px;
+  color: #16a34a;
+  font-weight: 500;
+  background: #f0fdf4;
+  padding: 4px 10px;
+  border-radius: 4px;
+  border: 1px solid #bbf7d0;
+  animation: copyFade 2s ease forwards;
+}
+
+@keyframes copyFade {
+  0%, 70% { opacity: 1; }
+  100% { opacity: 0; }
+}
+
 /* Inspector */
 .flow-inspector {
   width: 280px;
