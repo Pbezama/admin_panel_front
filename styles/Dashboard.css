@@ -6,9 +6,7 @@
   display: flex;
   overflow: hidden;
   background: #f1f5f9;
-  zoom: 0.66;
-  height: calc(100vh / 0.66);
-  width: calc(100vw / 0.66);
+  height: 100vh;
 }
 
 /* ===============================================================
