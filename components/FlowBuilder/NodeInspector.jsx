@@ -774,8 +774,9 @@ export default function NodeInspector({ nodo, onUpdate, onDelete }) {
                         type="button"
                         className={`flow-agente-option ${seleccionado ? 'flow-agente-option-active' : ''}`}
                         onClick={() => {
-                          actualizar('agente_id', ag.id)
-                          actualizar('agente_nombre', ag.nombre)
+                          const nuevosDatos = { ...datos, agente_id: ag.id, agente_nombre: ag.nombre, agente_icono: ag.icono }
+                          setDatos(nuevosDatos)
+                          onUpdate(nodo.id, nuevosDatos)
                         }}
                       >
                         <span className="flow-agente-option-icon">{ag.icono || '🤖'}</span>
