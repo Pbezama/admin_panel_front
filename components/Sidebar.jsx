@@ -18,7 +18,8 @@ import {
   LogOut,
   ExternalLink,
   Menu,
-  Bot
+  Bot,
+  Globe
 } from 'lucide-react'
 
 const navGroups = [
@@ -38,13 +39,12 @@ const navGroups = [
       { id: 'informes', label: 'Informes', icon: BarChart3, desc: 'Informes Instagram' },
       { id: 'dashboard-live', label: 'Chat en Vivo', icon: Headphones, desc: 'Conversaciones transferidas' },
     ]
-  // },
-  // {
-  //   label: 'Canales',
-  //   items: [
-  //     { id: 'integraciones', label: 'Integraciones', icon: Link, desc: 'Facebook / Instagram' },
-  //     { id: 'meta-ads', label: 'Meta Ads', icon: Megaphone, desc: 'Campanas' },
-  //   ]
+  },
+  {
+    label: 'Canales',
+    items: [
+      { id: 'webchat-config', label: 'Chat Web', icon: Globe, desc: 'Widget embebible para sitios web' },
+    ]
   }
 ]
 

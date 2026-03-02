@@ -611,15 +611,30 @@ export default function NodeInspector({ nodo, onUpdate, onDelete }) {
         {/* TRANSFERIR HUMANO */}
         {tipo === 'transferir_humano' && (
           <>
-            <label className="flow-field">
-              <span>Mensaje al usuario</span>
-              <textarea
-                value={datos.mensaje_usuario || ''}
-                onChange={e => actualizar('mensaje_usuario', e.target.value)}
-                placeholder="Te estoy conectando con un ejecutivo..."
-                rows={2}
+            <label className="flow-field flow-toggle">
+              <span>Notificar al cliente</span>
+              <input
+                type="checkbox"
+                checked={datos.notificar_cliente !== false}
+                onChange={e => actualizar('notificar_cliente', e.target.checked)}
               />
+              <small style={{ color: '#888', fontSize: '11px', display: 'block', marginTop: 4 }}>
+                {datos.notificar_cliente === false
+                  ? 'Transferencia silenciosa: el cliente no sabra que fue transferido'
+                  : 'Se enviara el mensaje de abajo al cliente'}
+              </small>
             </label>
+            {datos.notificar_cliente !== false && (
+              <label className="flow-field">
+                <span>Mensaje al usuario</span>
+                <textarea
+                  value={datos.mensaje_usuario || ''}
+                  onChange={e => actualizar('mensaje_usuario', e.target.value)}
+                  placeholder="Te estoy conectando con un ejecutivo..."
+                  rows={2}
+                />
+              </label>
+            )}
             <label className="flow-field">
               <span>Mensaje al ejecutivo</span>
               <textarea

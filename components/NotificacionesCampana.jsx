@@ -8,7 +8,8 @@ const ICONOS_TIPO = {
   cambio_estado: '\uD83D\uDD04',
   tarea_actualizada: '\uD83D\uDD04',
   nota_agregada: '\uD83D\uDCAC',
-  archivo_subido: '\uD83D\uDCCE'
+  archivo_subido: '\uD83D\uDCCE',
+  transferencia_cliente: '\uD83D\uDDE8\uFE0F'
 }
 
 /**
@@ -136,7 +137,12 @@ const NotificacionesCampana = ({ onNavegar, esAdmin = false }) => {
 
     setAbierto(false)
     if (onNavegar) {
-      onNavegar('tareas')
+      // Transferencias van al Dashboard Live, lo demas a Tareas
+      if (notificacion.subtipo === 'transferencia_cliente') {
+        onNavegar('dashboard-live')
+      } else {
+        onNavegar('tareas')
+      }
     }
   }
 

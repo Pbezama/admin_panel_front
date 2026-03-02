@@ -15,6 +15,7 @@ import EntrenadorView from '@/components/Views/EntrenadorView'
 import FlujosView from '@/components/Views/FlujosView'
 import AgentesView from '@/components/Views/AgentesView'
 import DashboardLiveView from '@/components/Views/DashboardLiveView'
+import WebChatConfigView from '@/components/Views/WebChatConfigView'
 import DashboardLayout from '@/components/DashboardLayout'
 import { RotateCcw, Send, ChevronDown, ChevronUp, Database, Sparkles, PanelRightOpen, PanelRightClose } from 'lucide-react'
 import '@/styles/Chat.css'
@@ -736,6 +737,8 @@ El usuario ya aprobo esta delegacion. Procede a pedir confirmacion para agregar 
         return <AgentesView />
       case 'dashboard-live':
         return <DashboardLiveView />
+      case 'webchat-config':
+        return <WebChatConfigView />
       default:
         return renderChat()
     }

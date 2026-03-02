@@ -19,6 +19,7 @@ const viewTitles = {
   'dashboard-live': 'Chat en Vivo',
   integraciones: 'Integraciones',
   'meta-ads': 'Meta Ads',
+  'webchat-config': 'Chat Web',
 }
 
 export default function DashboardLayout({ children }) {
