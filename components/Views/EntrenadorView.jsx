@@ -52,6 +52,9 @@ export default function EntrenadorView() {
   const [seleccionados, setSeleccionados] = useState([])
   const [seleccionadosReglas, setSeleccionadosReglas] = useState([])
   const [dragOver, setDragOver] = useState(false)
+  const [urlScrape, setUrlScrape] = useState('')
+  const [maxPaginas, setMaxPaginas] = useState(10)
+  const [scrapeando, setScrapeando] = useState(false)
 
   const fileInputRef = useRef(null)
   const pollIntervalRef = useRef(null)
@@ -186,6 +189,41 @@ export default function EntrenadorView() {
   }
 
   const handleDragLeave = () => setDragOver(false)
+
+  // ========== WEB SCRAPING ==========
+
+  const handleScrapeWeb = async () => {
+    if (!urlScrape.trim()) {
+      mostrarMensaje('Ingresa una URL valida', 'error')
+      return
+    }
+
+    try {
+      new URL(urlScrape)
+    } catch {
+      mostrarMensaje('URL invalida. Debe comenzar con http:// o https://', 'error')
+      return
+    }
+
+    setScrapeando(true)
+    try {
+      const result = await api.scrapearWebEntrenador(urlScrape.trim(), maxPaginas)
+      if (result.success) {
+        mostrarMensaje(
+          `Sitio web extraido: ${result.paginas_procesadas} paginas (${(result.caracteres / 1000).toFixed(0)}K caracteres). Procesando con IA...`,
+          'exito'
+        )
+        setUrlScrape('')
+        cargarDocumentos()
+      } else {
+        mostrarMensaje(result.error || 'Error extrayendo sitio web', 'error')
+      }
+    } catch (err) {
+      mostrarMensaje('Error: ' + err.message, 'error')
+    } finally {
+      setScrapeando(false)
+    }
+  }
 
   // ========== CONOCIMIENTO ==========
 
@@ -447,6 +485,56 @@ export default function EntrenadorView() {
                   <p className="dropzone-desc">PDF, Word, Excel, Imagenes, Audio, PPT, TXT, JSON</p>
                 </>
               )}
+            </div>
+
+            {/* Scraping web */}
+            <div className="web-scraper-section">
+              <div className="scraper-header">
+                <span className="scraper-icon">🌐</span>
+                <div>
+                  <h3 className="scraper-titulo">Extraer desde sitio web</h3>
+                  <p className="scraper-desc">Ingresa la URL de un sitio web para extraer todo su contenido automaticamente</p>
+                </div>
+              </div>
+              <div className="scraper-form">
+                <div className="scraper-input-row">
+                  <input
+                    type="url"
+                    className="scraper-url-input"
+                    placeholder="https://ejemplo.com"
+                    value={urlScrape}
+                    onChange={(e) => setUrlScrape(e.target.value)}
+                    disabled={scrapeando}
+                    onKeyDown={(e) => e.key === 'Enter' && !scrapeando && handleScrapeWeb()}
+                  />
+                  <div className="scraper-paginas">
+                    <label>Max. paginas:</label>
+                    <input
+                      type="number"
+                      min="1"
+                      max="20"
+                      value={maxPaginas}
+                      onChange={(e) => setMaxPaginas(Math.min(20, Math.max(1, parseInt(e.target.value) || 1)))}
+                      className="scraper-paginas-input"
+                      disabled={scrapeando}
+                    />
+                  </div>
+                </div>
+                <button
+                  className="btn-scrape"
+                  onClick={handleScrapeWeb}
+                  disabled={scrapeando || !urlScrape.trim()}
+                >
+                  {scrapeando ? (
+                    <>
+                      <div className="spinner-small"></div>
+                      Extrayendo sitio web...
+                    </>
+                  ) : (
+                    '🌐 Extraer de sitio web'
+                  )}
+                </button>
+              </div>
             </div>
 
             {/* Boton analizar */}

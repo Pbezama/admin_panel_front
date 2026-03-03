@@ -197,6 +197,130 @@
   gap: 12px;
 }
 
+/* ========== WEB SCRAPER ========== */
+
+.web-scraper-section {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 20px;
+  margin-bottom: 20px;
+}
+
+.scraper-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.scraper-icon {
+  font-size: 28px;
+  flex-shrink: 0;
+}
+
+.scraper-titulo {
+  font-size: 15px;
+  font-weight: 600;
+  color: #1a1a1a;
+  margin: 0 0 4px;
+}
+
+.scraper-desc {
+  font-size: 13px;
+  color: #64748b;
+  margin: 0;
+}
+
+.scraper-form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.scraper-input-row {
+  display: flex;
+  gap: 12px;
+  align-items: flex-end;
+}
+
+.scraper-url-input {
+  flex: 1;
+  padding: 10px 14px;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  font-size: 14px;
+  color: #1a1a1a;
+  transition: border-color 0.15s ease;
+}
+
+.scraper-url-input:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1);
+}
+
+.scraper-url-input:disabled {
+  background: #f8fafc;
+  color: #94a3b8;
+}
+
+.scraper-paginas {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.scraper-paginas label {
+  font-size: 12px;
+  font-weight: 500;
+  color: #64748b;
+}
+
+.scraper-paginas-input {
+  width: 60px;
+  padding: 10px 8px;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  font-size: 14px;
+  text-align: center;
+  color: #1a1a1a;
+}
+
+.scraper-paginas-input:focus {
+  outline: none;
+  border-color: #3b82f6;
+}
+
+.btn-scrape {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 24px;
+  background: #0ea5e9;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  align-self: flex-start;
+}
+
+.btn-scrape:hover:not(:disabled) {
+  background: #0284c7;
+}
+
+.btn-scrape:disabled {
+  background: #cbd5e1;
+  cursor: not-allowed;
+}
+
+/* ========== DOCUMENTOS ACCIONES ========== */
+
 .documentos-acciones {
   display: flex;
   align-items: center;
@@ -880,6 +1004,20 @@
 
   .card-confianza {
     width: 70px;
+  }
+
+  .scraper-input-row {
+    flex-direction: column;
+  }
+
+  .scraper-paginas {
+    flex-direction: row;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .btn-scrape {
+    align-self: stretch;
   }
 
   .documentos-acciones {
