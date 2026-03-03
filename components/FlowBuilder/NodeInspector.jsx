@@ -249,6 +249,8 @@ export default function NodeInspector({ nodo, onUpdate, onDelete }) {
   const [datos, setDatos] = useState(nodo?.data || {})
   const [agentes, setAgentes] = useState([])
   const [cargandoAgentes, setCargandoAgentes] = useState(false)
+  const [ejecutivos, setEjecutivos] = useState([])
+  const [cargandoEjecutivos, setCargandoEjecutivos] = useState(false)
 
   useEffect(() => {
     setDatos(nodo?.data || {})
@@ -262,6 +264,17 @@ export default function NodeInspector({ nodo, onUpdate, onDelete }) {
         .then(result => setAgentes(result.agentes || []))
         .catch(() => setAgentes([]))
         .finally(() => setCargandoAgentes(false))
+    }
+  }, [nodo?.type, nodo?.id])
+
+  // Cargar ejecutivos cuando se selecciona un nodo transferir_humano
+  useEffect(() => {
+    if (nodo?.type === 'transferir_humano') {
+      setCargandoEjecutivos(true)
+      api.getColaboradores()
+        .then(result => setEjecutivos(result.data || []))
+        .catch(() => setEjecutivos([]))
+        .finally(() => setCargandoEjecutivos(false))
     }
   }, [nodo?.type, nodo?.id])
 
@@ -611,6 +624,45 @@ export default function NodeInspector({ nodo, onUpdate, onDelete }) {
         {/* TRANSFERIR HUMANO */}
         {tipo === 'transferir_humano' && (
           <>
+            <div className="flow-field">
+              <span>Ejecutivo asignado</span>
+              {cargandoEjecutivos ? (
+                <div className="flow-field-info">Cargando ejecutivos...</div>
+              ) : ejecutivos.length > 0 ? (
+                <>
+                  <select
+                    value={datos.ejecutivo_id || ''}
+                    onChange={e => {
+                      const id = e.target.value ? Number(e.target.value) : null
+                      const ej = ejecutivos.find(u => u.id === id)
+                      const nuevosDatos = {
+                        ...datos,
+                        ejecutivo_id: id,
+                        ejecutivo_nombre: ej?.nombre || ''
+                      }
+                      setDatos(nuevosDatos)
+                      onUpdate(nodo.id, nuevosDatos)
+                    }}
+                    style={{ width: '100%' }}
+                  >
+                    <option value="">Todos los ejecutivos (notificacion general)</option>
+                    {ejecutivos.map(ej => (
+                      <option key={ej.id} value={ej.id}>
+                        {ej.nombre} {ej.telefono ? `(${ej.telefono})` : '(sin telefono)'}
+                      </option>
+                    ))}
+                  </select>
+                  <small style={{ color: '#888', fontSize: '11px', display: 'block', marginTop: 4 }}>
+                    {datos.ejecutivo_id
+                      ? 'Se notificara por WhatsApp al ejecutivo seleccionado'
+                      : 'Se creara notificacion en el panel para todos los ejecutivos'}
+                  </small>
+                </>
+              ) : (
+                <div className="flow-field-info">No hay ejecutivos disponibles</div>
+              )}
+            </div>
+
             <label className="flow-field flow-toggle">
               <span>Notificar al cliente</span>
               <input
@@ -636,13 +688,16 @@ export default function NodeInspector({ nodo, onUpdate, onDelete }) {
               </label>
             )}
             <label className="flow-field">
-              <span>Mensaje al ejecutivo</span>
+              <span>Mensaje al ejecutivo (contexto)</span>
               <textarea
                 value={datos.mensaje_ejecutivo || ''}
                 onChange={e => actualizar('mensaje_ejecutivo', e.target.value)}
                 placeholder="Nuevo lead desde {{canal}}: {{nombre_cliente}}"
                 rows={2}
               />
+              <small style={{ color: '#888', fontSize: '11px', display: 'block', marginTop: 4 }}>
+                Este texto se incluye en la notificacion WhatsApp como contexto adicional
+              </small>
             </label>
           </>
         )}
