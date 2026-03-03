@@ -271,10 +271,20 @@ export function GuardarVariableNode({ data, selected }) {
 }
 
 export function GuardarBdNode({ data, selected }) {
+  const esCustom = data.modo === 'tabla_custom'
+  const ops = { insert: 'INSERT', update: 'UPDATE', select: 'SELECT', delete: 'DELETE' }
+  const texto = esCustom
+    ? `${ops[data.operacion] || 'INSERT'} → ${data.tabla_nombre || 'tabla...'}`
+    : `Tabla: ${data.tabla || 'base_cuentas'}`
   return (
-    <div>
+    <div style={{ position: 'relative' }}>
       <Handle type="target" position={Position.Top} style={handleStyle} />
-      <BaseNode data={{ texto: `Tabla: ${data.tabla || 'base_cuentas'}` }} tipo="guardar_bd" selected={selected} />
+      <BaseNode data={{ texto }} tipo="guardar_bd" selected={selected} />
+      {esCustom && (
+        <div style={{ position: 'absolute', bottom: 4, right: 4, background: '#10b981', color: '#fff', borderRadius: 10, fontSize: 9, padding: '1px 5px', fontWeight: 700, lineHeight: 1.5, pointerEvents: 'none' }}>
+          custom
+        </div>
+      )}
       <Handle type="source" position={Position.Bottom} style={handleStyle} />
     </div>
   )
@@ -389,10 +399,21 @@ export function AgendarCitaNode({ data, selected }) {
 }
 
 export function UsarAgenteNode({ data, selected }) {
+  const equipo = data.agentes_equipo || []
   return (
-    <div>
+    <div style={{ position: 'relative' }}>
       <Handle type="target" position={Position.Top} style={handleStyle} />
-      <BaseNode data={{ texto: data._agente_nombre || data.mensaje_transicion || 'Delegar a agente IA' }} tipo="usar_agente" selected={selected} />
+      <BaseNode data={{ texto: data.agente_nombre || data._agente_nombre || data.mensaje_transicion || 'Delegar a agente IA' }} tipo="usar_agente" selected={selected} />
+      {equipo.length > 0 && (
+        <div style={{
+          position: 'absolute', bottom: 4, right: 4,
+          background: '#8b5cf6', color: '#fff',
+          borderRadius: 10, fontSize: 9, padding: '1px 5px',
+          fontWeight: 700, lineHeight: 1.5, pointerEvents: 'none'
+        }}>
+          {equipo.map(a => a.agente_icono || '🤖').join('')} {equipo.length}
+        </div>
+      )}
     </div>
   )
 }

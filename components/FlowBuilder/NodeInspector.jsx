@@ -59,13 +59,14 @@ const NODE_DOCS = {
     ejemplo: 'Variable: "estado_lead", Valor: "calificado", Tipo: Literal → Marca al lead como calificado para usarlo despues en una condicion o al guardar en base de datos.'
   },
   guardar_bd: {
-    titulo: 'Guardar en Base de Datos',
-    descripcion: 'Guarda informacion en la tabla base_cuentas de Supabase. Crea un nuevo registro con la categoria, clave y valor que definas. Ideal para guardar leads, contactos o cualquier dato recopilado durante el flujo.',
-    comoUsarlo: '1. La tabla por defecto es "base_cuentas" (la principal del sistema).\n2. Define la categoria del registro (ej: "lead", "contacto", "cita").\n3. En "Clave" pon el identificador: normalmente {{nombre_cliente}} o {{telefono_cliente}}.\n4. En "Valor" pon toda la informacion recopilada usando variables: "Email: {{email_cliente}}, Tel: {{telefono_cliente}}".',
+    titulo: 'Datos en Base de Datos',
+    descripcion: 'Guarda, busca o actualiza datos en tus tablas personalizadas. Modo clasico: inserta en base_cuentas. Modo tabla personalizada: crea tus propias tablas con columnas a medida y ejecuta INSERT, UPDATE, SELECT o DELETE.',
+    comoUsarlo: 'Modo clasico: igual que siempre (base_cuentas).\n\nModo tabla personalizada:\n1. Selecciona "Tabla personalizada".\n2. Elige la operacion: INSERT para guardar, UPDATE para modificar, SELECT para consultar, DELETE para eliminar.\n3. Elige una tabla existente o crea una nueva definiendo columnas (o importando un CSV/Excel).\n4. Mapea cada columna a una variable del flujo usando {{variable}}.\n5. Para UPDATE/DELETE/SELECT: agrega filtros para seleccionar que registros afectar.',
     variables: [
-      { nombre: '{{cualquier_variable}}', desc: 'Todas las variables del flujo disponibles para clave y valor' }
+      { nombre: '{{cualquier_variable}}', desc: 'Todas las variables del flujo disponibles en el mapeo' },
+      { nombre: 'variable_resultado', desc: 'En SELECT: la variable donde se guardan los registros encontrados (array JSON)' }
     ],
-    ejemplo: 'Categoria: "lead", Clave: "{{nombre_cliente}}", Valor: "Email: {{email_cliente}}, Tipo reunion: {{tipo_reunion}}, Canal: {{canal}}" → Crea un registro en la base de datos con toda la info del lead.'
+    ejemplo: 'INSERT → tabla "clientes_captados": nombre={{nombre_cliente}}, email={{email_cliente}}, canal={{canal}}.\nSELECT → tabla "productos" con filtro categoria=premium → resultado en "productos_premium".\nUPDATE → tabla "leads" con filtro email={{email_cliente}} → actualizar estado="contactado".'
   },
   buscar_conocimiento: {
     titulo: 'Buscar en Conocimiento',
@@ -251,6 +252,12 @@ export default function NodeInspector({ nodo, onUpdate, onDelete }) {
   const [cargandoAgentes, setCargandoAgentes] = useState(false)
   const [ejecutivos, setEjecutivos] = useState([])
   const [cargandoEjecutivos, setCargandoEjecutivos] = useState(false)
+  const [tablasCustom, setTablasCustom] = useState([])
+  const [cargandoTablas, setCargandoTablas] = useState(false)
+  const [creandoTabla, setCreandoTabla] = useState(false)
+  const [nuevaTabla, setNuevaTabla] = useState({ nombre: '', columnas: [] })
+  const [importPreview, setImportPreview] = useState(null)
+  const [guardandoTabla, setGuardandoTabla] = useState(false)
 
   useEffect(() => {
     setDatos(nodo?.data || {})
@@ -277,6 +284,17 @@ export default function NodeInspector({ nodo, onUpdate, onDelete }) {
         .finally(() => setCargandoEjecutivos(false))
     }
   }, [nodo?.type, nodo?.id])
+
+  // Cargar tablas custom cuando guardar_bd está en modo tabla_custom
+  useEffect(() => {
+    if (nodo?.type === 'guardar_bd' && datos.modo === 'tabla_custom') {
+      setCargandoTablas(true)
+      api.getTablasCustom()
+        .then(r => setTablasCustom(r.tablas || []))
+        .catch(() => setTablasCustom([]))
+        .finally(() => setCargandoTablas(false))
+    }
+  }, [nodo?.type, datos.modo, nodo?.id])
 
   if (!nodo) {
     return (
@@ -487,35 +505,333 @@ export default function NodeInspector({ nodo, onUpdate, onDelete }) {
         {/* GUARDAR BD */}
         {tipo === 'guardar_bd' && (
           <>
-            <label className="flow-field">
-              <span>Tabla</span>
-              <input value={datos.tabla || 'base_cuentas'} onChange={e => actualizar('tabla', e.target.value)} />
-            </label>
-            <label className="flow-field">
-              <span>Categoria</span>
-              <input
-                value={datos.campos?.categoria || ''}
-                onChange={e => actualizarAnidado('campos', 'categoria', e.target.value)}
-                placeholder="lead"
-              />
-            </label>
-            <label className="flow-field">
-              <span>Clave</span>
-              <input
-                value={datos.campos?.clave || ''}
-                onChange={e => actualizarAnidado('campos', 'clave', e.target.value)}
-                placeholder="{{nombre_cliente}}"
-              />
-            </label>
-            <label className="flow-field">
-              <span>Valor</span>
-              <textarea
-                value={datos.campos?.valor || ''}
-                onChange={e => actualizarAnidado('campos', 'valor', e.target.value)}
-                placeholder="Email: {{email_cliente}}"
-                rows={2}
-              />
-            </label>
+            {/* Toggle modo */}
+            <div style={{ display: 'flex', gap: 6, marginBottom: 10 }}>
+              {['clasico', 'tabla_custom'].map(m => (
+                <button
+                  key={m}
+                  onClick={() => actualizar('modo', m)}
+                  style={{
+                    flex: 1, padding: '5px 8px', fontSize: 11, borderRadius: 6, cursor: 'pointer', fontWeight: 600,
+                    background: datos.modo === m ? '#10b981' : 'transparent',
+                    color: datos.modo === m ? '#fff' : '#6b7280',
+                    border: `1.5px solid ${datos.modo === m ? '#10b981' : '#d1d5db'}`
+                  }}
+                >
+                  {m === 'clasico' ? 'Clásico' : 'Tabla personalizada'}
+                </button>
+              ))}
+            </div>
+
+            {/* ── MODO CLÁSICO ── */}
+            {(datos.modo || 'clasico') === 'clasico' && (
+              <>
+                <label className="flow-field">
+                  <span>Tabla</span>
+                  <input value={datos.tabla || 'base_cuentas'} onChange={e => actualizar('tabla', e.target.value)} />
+                </label>
+                <label className="flow-field">
+                  <span>Categoria</span>
+                  <input value={datos.campos?.categoria || ''} onChange={e => actualizarAnidado('campos', 'categoria', e.target.value)} placeholder="lead" />
+                </label>
+                <label className="flow-field">
+                  <span>Clave</span>
+                  <input value={datos.campos?.clave || ''} onChange={e => actualizarAnidado('campos', 'clave', e.target.value)} placeholder="{{nombre_cliente}}" />
+                </label>
+                <label className="flow-field">
+                  <span>Valor</span>
+                  <textarea value={datos.campos?.valor || ''} onChange={e => actualizarAnidado('campos', 'valor', e.target.value)} placeholder="Email: {{email_cliente}}" rows={2} />
+                </label>
+              </>
+            )}
+
+            {/* ── MODO TABLA CUSTOM ── */}
+            {datos.modo === 'tabla_custom' && (
+              <>
+                {/* Operación */}
+                <label className="flow-field">
+                  <span>Operación</span>
+                  <select value={datos.operacion || 'insert'} onChange={e => actualizar('operacion', e.target.value)}>
+                    <option value="insert">INSERT – Insertar registro</option>
+                    <option value="update">UPDATE – Actualizar registros</option>
+                    <option value="select">SELECT – Consultar registros</option>
+                    <option value="delete">DELETE – Eliminar registros</option>
+                  </select>
+                </label>
+
+                {/* Selector de tabla */}
+                {!creandoTabla ? (
+                  <label className="flow-field">
+                    <span>Tabla</span>
+                    <div style={{ display: 'flex', gap: 6 }}>
+                      <select
+                        style={{ flex: 1 }}
+                        value={datos.tabla_id || ''}
+                        onChange={e => {
+                          const t = tablasCustom.find(x => x.id === Number(e.target.value))
+                          actualizar('tabla_id', t?.id || null)
+                          actualizar('tabla_nombre', t?.nombre || '')
+                        }}
+                      >
+                        <option value="">— {cargandoTablas ? 'Cargando...' : 'Selecciona tabla'} —</option>
+                        {tablasCustom.map(t => (
+                          <option key={t.id} value={t.id}>{t.nombre} ({t.total_registros || 0} reg)</option>
+                        ))}
+                      </select>
+                      <button
+                        onClick={() => { setCreandoTabla(true); setNuevaTabla({ nombre: '', columnas: [] }); setImportPreview(null) }}
+                        style={{ padding: '4px 8px', fontSize: 11, background: '#6366f1', color: '#fff', border: 'none', borderRadius: 6, cursor: 'pointer', whiteSpace: 'nowrap' }}
+                      >
+                        + Nueva
+                      </button>
+                    </div>
+                  </label>
+                ) : (
+                  /* ── Formulario de nueva tabla ── */
+                  <div style={{ border: '1.5px solid #6366f1', borderRadius: 8, padding: 10, marginBottom: 8 }}>
+                    <div style={{ fontWeight: 700, fontSize: 12, color: '#6366f1', marginBottom: 8 }}>Nueva tabla</div>
+                    <label className="flow-field">
+                      <span>Nombre de la tabla</span>
+                      <input
+                        value={nuevaTabla.nombre}
+                        onChange={e => setNuevaTabla(p => ({ ...p, nombre: e.target.value }))}
+                        placeholder="ej: clientes_captados"
+                      />
+                    </label>
+
+                    {/* Columnas manuales */}
+                    <div style={{ fontSize: 11, fontWeight: 600, color: '#374151', marginBottom: 4 }}>Columnas</div>
+                    {(nuevaTabla.columnas || []).map((col, i) => (
+                      <div key={i} style={{ display: 'flex', gap: 4, marginBottom: 4, alignItems: 'center' }}>
+                        <input
+                          value={col.nombre}
+                          onChange={e => {
+                            const cols = [...nuevaTabla.columnas]
+                            cols[i] = { ...cols[i], nombre: e.target.value }
+                            setNuevaTabla(p => ({ ...p, columnas: cols }))
+                          }}
+                          placeholder="nombre_columna"
+                          style={{ flex: 2, padding: '3px 6px', fontSize: 11, borderRadius: 4, border: '1px solid #d1d5db' }}
+                        />
+                        <select
+                          value={col.tipo}
+                          onChange={e => {
+                            const cols = [...nuevaTabla.columnas]
+                            cols[i] = { ...cols[i], tipo: e.target.value }
+                            setNuevaTabla(p => ({ ...p, columnas: cols }))
+                          }}
+                          style={{ flex: 1, padding: '3px 6px', fontSize: 11, borderRadius: 4, border: '1px solid #d1d5db' }}
+                        >
+                          <option value="texto">Texto</option>
+                          <option value="numero">Número</option>
+                          <option value="email">Email</option>
+                          <option value="fecha">Fecha</option>
+                          <option value="booleano">Booleano</option>
+                        </select>
+                        <button
+                          onClick={() => setNuevaTabla(p => ({ ...p, columnas: p.columnas.filter((_, j) => j !== i) }))}
+                          style={{ padding: '2px 7px', fontSize: 12, background: 'transparent', border: 'none', color: '#ef4444', cursor: 'pointer' }}
+                        >×</button>
+                      </div>
+                    ))}
+                    <button
+                      onClick={() => setNuevaTabla(p => ({ ...p, columnas: [...p.columnas, { nombre: '', tipo: 'texto', requerido: false }] }))}
+                      style={{ fontSize: 11, color: '#6366f1', background: 'none', border: 'none', cursor: 'pointer', padding: '2px 0', marginBottom: 6 }}
+                    >+ Agregar columna</button>
+
+                    {/* Import CSV/Excel */}
+                    <div style={{ fontSize: 11, color: '#6b7280', marginBottom: 4 }}>O importar esquema desde archivo:</div>
+                    <input
+                      type="file"
+                      accept=".csv,.xlsx,.xls,.ods"
+                      style={{ fontSize: 11, marginBottom: 6 }}
+                      onChange={async (e) => {
+                        const file = e.target.files?.[0]
+                        if (!file) return
+                        const fd = new FormData()
+                        fd.append('archivo', file)
+                        try {
+                          const res = await api.importarEsquemaCSV(fd)
+                          setImportPreview(res)
+                          setNuevaTabla(p => ({ ...p, columnas: res.columnas_detectadas || [] }))
+                        } catch (err) {
+                          alert('Error al analizar el archivo: ' + err.message)
+                        }
+                      }}
+                    />
+                    {importPreview && (
+                      <div style={{ fontSize: 10, color: '#059669', marginBottom: 6 }}>
+                        ✓ {importPreview.total_filas} filas detectadas · {importPreview.columnas_detectadas?.length} columnas
+                      </div>
+                    )}
+
+                    <div style={{ display: 'flex', gap: 6, marginTop: 4 }}>
+                      <button
+                        disabled={guardandoTabla || !nuevaTabla.nombre.trim()}
+                        onClick={async () => {
+                          if (!nuevaTabla.nombre.trim()) return
+                          setGuardandoTabla(true)
+                          try {
+                            const res = await api.crearTablaCustom({
+                              nombre: nuevaTabla.nombre.trim(),
+                              columnas: nuevaTabla.columnas
+                            })
+                            const t = res.tabla
+                            setTablasCustom(prev => [t, ...prev])
+                            actualizar('tabla_id', t.id)
+                            actualizar('tabla_nombre', t.nombre)
+
+                            // Si hay importPreview → importar datos también
+                            if (importPreview?.preview_filas) {
+                              const fd2 = new FormData()
+                              // Nota: para importar datos se necesita el archivo de nuevo
+                              // (el preview no guarda los datos completos por seguridad)
+                              // El usuario puede importar desde la vista "Mis Tablas"
+                            }
+
+                            setCreandoTabla(false)
+                            setNuevaTabla({ nombre: '', columnas: [] })
+                            setImportPreview(null)
+                          } catch (err) {
+                            alert('Error al crear tabla: ' + err.message)
+                          } finally {
+                            setGuardandoTabla(false)
+                          }
+                        }}
+                        style={{ flex: 1, padding: '5px', fontSize: 11, background: '#6366f1', color: '#fff', border: 'none', borderRadius: 6, cursor: 'pointer', opacity: guardandoTabla ? 0.6 : 1 }}
+                      >
+                        {guardandoTabla ? 'Creando...' : 'Crear tabla'}
+                      </button>
+                      <button
+                        onClick={() => { setCreandoTabla(false); setImportPreview(null) }}
+                        style={{ padding: '5px 10px', fontSize: 11, background: 'transparent', border: '1px solid #d1d5db', borderRadius: 6, cursor: 'pointer' }}
+                      >Cancelar</button>
+                    </div>
+                  </div>
+                )}
+
+                {/* Tabla seleccionada → mostrar columnas de la tabla */}
+                {datos.tabla_id && !creandoTabla && (() => {
+                  const tablaSeleccionada = tablasCustom.find(t => t.id === datos.tabla_id)
+                  const columnas = tablaSeleccionada?.columnas || []
+                  const mapeo = datos.mapeo || []
+                  const filtros = datos.filtros || []
+                  const operacion = datos.operacion || 'insert'
+
+                  return (
+                    <>
+                      {/* Mapeo de columnas (INSERT / UPDATE) */}
+                      {(operacion === 'insert' || operacion === 'update') && columnas.length > 0 && (
+                        <div style={{ marginBottom: 8 }}>
+                          <div style={{ fontSize: 11, fontWeight: 600, color: '#374151', marginBottom: 6 }}>
+                            {operacion === 'insert' ? 'Mapeo de columnas' : 'Datos a actualizar'}
+                          </div>
+                          {columnas.map((col, i) => {
+                            const item = mapeo.find(m => m.columna === col.nombre) || { columna: col.nombre, valor: '' }
+                            return (
+                              <div key={i} style={{ display: 'flex', gap: 6, alignItems: 'center', marginBottom: 4 }}>
+                                <span style={{ fontSize: 10, color: '#6b7280', minWidth: 90, maxWidth: 90, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={col.nombre}>
+                                  {col.nombre}
+                                </span>
+                                <input
+                                  value={item.valor}
+                                  onChange={e => {
+                                    const nuevo = mapeo.filter(m => m.columna !== col.nombre)
+                                    nuevo.push({ columna: col.nombre, valor: e.target.value })
+                                    actualizar('mapeo', nuevo)
+                                  }}
+                                  placeholder={`{{${col.nombre}}}`}
+                                  style={{ flex: 1, padding: '3px 6px', fontSize: 11, borderRadius: 4, border: '1px solid #d1d5db' }}
+                                />
+                              </div>
+                            )
+                          })}
+                        </div>
+                      )}
+
+                      {/* Mapeo manual (INSERT sin columnas definidas) */}
+                      {(operacion === 'insert' || operacion === 'update') && columnas.length === 0 && (
+                        <div style={{ marginBottom: 8 }}>
+                          <div style={{ fontSize: 11, fontWeight: 600, color: '#374151', marginBottom: 6 }}>Mapeo de columnas</div>
+                          {mapeo.map((item, i) => (
+                            <div key={i} style={{ display: 'flex', gap: 4, alignItems: 'center', marginBottom: 4 }}>
+                              <input
+                                value={item.columna}
+                                onChange={e => { const m = [...mapeo]; m[i] = { ...m[i], columna: e.target.value }; actualizar('mapeo', m) }}
+                                placeholder="columna"
+                                style={{ flex: 1, padding: '3px 6px', fontSize: 11, borderRadius: 4, border: '1px solid #d1d5db' }}
+                              />
+                              <input
+                                value={item.valor}
+                                onChange={e => { const m = [...mapeo]; m[i] = { ...m[i], valor: e.target.value }; actualizar('mapeo', m) }}
+                                placeholder="{{variable}}"
+                                style={{ flex: 1, padding: '3px 6px', fontSize: 11, borderRadius: 4, border: '1px solid #d1d5db' }}
+                              />
+                              <button onClick={() => actualizar('mapeo', mapeo.filter((_, j) => j !== i))} style={{ padding: '2px 7px', fontSize: 12, background: 'transparent', border: 'none', color: '#ef4444', cursor: 'pointer' }}>×</button>
+                            </div>
+                          ))}
+                          <button onClick={() => actualizar('mapeo', [...mapeo, { columna: '', valor: '' }])} style={{ fontSize: 11, color: '#10b981', background: 'none', border: 'none', cursor: 'pointer', padding: '2px 0' }}>+ Agregar campo</button>
+                        </div>
+                      )}
+
+                      {/* Filtros WHERE (UPDATE / DELETE / SELECT) */}
+                      {(operacion === 'update' || operacion === 'delete' || operacion === 'select') && (
+                        <div style={{ marginBottom: 8 }}>
+                          <div style={{ fontSize: 11, fontWeight: 600, color: '#374151', marginBottom: 6 }}>Filtros (condición WHERE)</div>
+                          {filtros.map((f, i) => (
+                            <div key={i} style={{ display: 'flex', gap: 4, alignItems: 'center', marginBottom: 4 }}>
+                              <input
+                                value={f.columna}
+                                onChange={e => { const arr = [...filtros]; arr[i] = { ...arr[i], columna: e.target.value }; actualizar('filtros', arr) }}
+                                placeholder="columna"
+                                style={{ flex: 2, padding: '3px 6px', fontSize: 11, borderRadius: 4, border: '1px solid #d1d5db' }}
+                              />
+                              <select
+                                value={f.operador || 'eq'}
+                                onChange={e => { const arr = [...filtros]; arr[i] = { ...arr[i], operador: e.target.value }; actualizar('filtros', arr) }}
+                                style={{ flex: 1, padding: '3px 4px', fontSize: 10, borderRadius: 4, border: '1px solid #d1d5db' }}
+                              >
+                                <option value="eq">= igual</option>
+                                <option value="neq">≠ distinto</option>
+                                <option value="like">~ contiene</option>
+                                <option value="gt">&gt; mayor</option>
+                                <option value="lt">&lt; menor</option>
+                              </select>
+                              <input
+                                value={f.valor}
+                                onChange={e => { const arr = [...filtros]; arr[i] = { ...arr[i], valor: e.target.value }; actualizar('filtros', arr) }}
+                                placeholder="valor / {{var}}"
+                                style={{ flex: 2, padding: '3px 6px', fontSize: 11, borderRadius: 4, border: '1px solid #d1d5db' }}
+                              />
+                              <button onClick={() => actualizar('filtros', filtros.filter((_, j) => j !== i))} style={{ padding: '2px 7px', fontSize: 12, background: 'transparent', border: 'none', color: '#ef4444', cursor: 'pointer' }}>×</button>
+                            </div>
+                          ))}
+                          <button onClick={() => actualizar('filtros', [...filtros, { columna: '', operador: 'eq', valor: '' }])} style={{ fontSize: 11, color: '#6366f1', background: 'none', border: 'none', cursor: 'pointer', padding: '2px 0' }}>+ Agregar filtro</button>
+                        </div>
+                      )}
+
+                      {/* Variable resultado (SELECT) */}
+                      {operacion === 'select' && (
+                        <label className="flow-field">
+                          <span>Guardar resultado en variable</span>
+                          <input
+                            value={datos.variable_resultado || ''}
+                            onChange={e => actualizar('variable_resultado', e.target.value)}
+                            placeholder="ej: registros_encontrados"
+                          />
+                        </label>
+                      )}
+                    </>
+                  )
+                })()}
+
+                <div className="flow-field-info" style={{ marginTop: 8 }}>
+                  {datos.tabla_id
+                    ? `Tabla: ${datos.tabla_nombre} · ${datos.operacion?.toUpperCase() || 'INSERT'}`
+                    : 'Selecciona o crea una tabla para configurar el mapeo'}
+                </div>
+              </>
+            )}
           </>
         )}
 
@@ -891,10 +1207,87 @@ export default function NodeInspector({ nodo, onUpdate, onDelete }) {
                 rows={2}
               />
             </label>
+            {/* EQUIPO DE AGENTES DELEGABLES */}
+            {datos.agente_id && (
+              <div className="flow-field">
+                <span style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span>Agentes delegables</span>
+                  <button
+                    type="button"
+                    className="flow-agente-crear-btn"
+                    onClick={() => {
+                      const idsEnEquipo = new Set((datos.agentes_equipo || []).map(a => a.agente_id))
+                      const disponibles = agentes.filter(a => a.id !== datos.agente_id && !idsEnEquipo.has(a.id))
+                      if (!disponibles.length) return
+                      const ag = disponibles[0]
+                      actualizar('agentes_equipo', [
+                        ...(datos.agentes_equipo || []),
+                        { agente_id: ag.id, agente_nombre: ag.nombre, agente_icono: ag.icono || '🤖', cuando_delegar: '' }
+                      ])
+                    }}
+                  >+ Agregar</button>
+                </span>
+
+                {!(datos.agentes_equipo || []).length && (
+                  <div className="flow-field-info" style={{ marginTop: 6 }}>
+                    Sin equipo — el agente opera solo y finaliza con [FINALIZAR].
+                  </div>
+                )}
+
+                {(datos.agentes_equipo || []).map((miembro, idx) => (
+                  <div key={idx} style={{ background: '#f9fafb', border: '1px solid #e5e7eb', borderRadius: 6, padding: 8, marginTop: 8 }}>
+                    <div style={{ display: 'flex', gap: 6, alignItems: 'center', marginBottom: 6 }}>
+                      <span style={{ fontSize: 16 }}>{miembro.agente_icono || '🤖'}</span>
+                      <select
+                        value={miembro.agente_id || ''}
+                        onChange={e => {
+                          const ag = agentes.find(a => a.id === Number(e.target.value))
+                          if (!ag) return
+                          const eq = [...(datos.agentes_equipo || [])]
+                          eq[idx] = { ...eq[idx], agente_id: ag.id, agente_nombre: ag.nombre, agente_icono: ag.icono || '🤖' }
+                          actualizar('agentes_equipo', eq)
+                        }}
+                        style={{ flex: 1, padding: '3px 6px', borderRadius: 4, border: '1px solid #d1d5db', fontSize: 12 }}
+                      >
+                        {agentes
+                          .filter(a => a.id !== datos.agente_id &&
+                            !(datos.agentes_equipo || []).some((m, i) => i !== idx && m.agente_id === a.id))
+                          .map(a => <option key={a.id} value={a.id}>{a.icono || '🤖'} {a.nombre} {a.estado !== 'activo' ? `(${a.estado})` : ''}</option>)
+                        }
+                      </select>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const eq = [...(datos.agentes_equipo || [])]
+                          eq.splice(idx, 1)
+                          actualizar('agentes_equipo', eq)
+                        }}
+                        style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', fontSize: 18, lineHeight: 1 }}
+                      >×</button>
+                    </div>
+                    <label className="flow-field" style={{ marginBottom: 0 }}>
+                      <span style={{ fontSize: 11, color: '#6b7280' }}>Cuándo delegar a {miembro.agente_nombre}</span>
+                      <textarea
+                        value={miembro.cuando_delegar || ''}
+                        onChange={e => {
+                          const eq = [...(datos.agentes_equipo || [])]
+                          eq[idx] = { ...eq[idx], cuando_delegar: e.target.value }
+                          actualizar('agentes_equipo', eq)
+                        }}
+                        placeholder="Ej: Cuando el usuario tenga problemas técnicos o errores de software"
+                        rows={2}
+                        style={{ fontSize: 12 }}
+                      />
+                    </label>
+                  </div>
+                ))}
+              </div>
+            )}
+
             <div className="flow-field-info">
-              El agente tomara control total de la conversacion. Este nodo es terminal:
-              el flujo no continua despues. El agente decide cuando finalizar o un humano
-              puede cerrar la conversacion desde el panel de monitoreo del agente.
+              {(datos.agentes_equipo || []).length > 0
+                ? `Equipo configurado: ${(datos.agentes_equipo || []).length} agente(s) delegable(s). El agente primario emite [DELEGAR:id] cuando necesita a un especialista.`
+                : 'Nodo terminal: el flujo no continua despues. El agente decide cuando finalizar.'}
             </div>
           </>
         )}

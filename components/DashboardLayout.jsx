@@ -20,6 +20,7 @@ const viewTitles = {
   integraciones: 'Integraciones',
   'meta-ads': 'Meta Ads',
   'webchat-config': 'Chat Web',
+  'tablas-custom': 'Mis Tablas',
 }
 
 export default function DashboardLayout({ children }) {

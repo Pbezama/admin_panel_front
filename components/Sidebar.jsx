@@ -19,7 +19,8 @@ import {
   ExternalLink,
   Menu,
   Bot,
-  Globe
+  Globe,
+  Table
 } from 'lucide-react'
 
 const navGroups = [
@@ -35,6 +36,7 @@ const navGroups = [
       { id: 'tareas', label: 'Tareas', icon: CheckSquare, desc: 'Gestion de tareas' },
       { id: 'flujos', label: 'Flujos', icon: GitBranch, desc: 'Flujos conversacionales' },
       { id: 'agentes', label: 'Agentes', icon: Bot, desc: 'Agentes IA autonomos' },
+      { id: 'tablas-custom', label: 'Mis Tablas', icon: Table, desc: 'Tablas de datos personalizadas' },
       { id: 'entrenador', label: 'Entrenador', icon: Brain, desc: 'Entrenar IA' },
       { id: 'informes', label: 'Informes', icon: BarChart3, desc: 'Informes Instagram' },
       { id: 'dashboard-live', label: 'Chat en Vivo', icon: Headphones, desc: 'Conversaciones transferidas' },

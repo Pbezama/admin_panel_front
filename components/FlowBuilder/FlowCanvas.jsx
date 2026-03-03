@@ -26,7 +26,17 @@ const DATOS_DEFAULT = {
   pregunta: { texto: '', tipo_respuesta: 'texto_libre', variable_destino: '', validacion: { requerido: true } },
   condicion: { variable: '', operador: 'no_vacio', valor: '' },
   guardar_variable: { variable: '', valor: '', tipo_valor: 'literal' },
-  guardar_bd: { tabla: 'base_cuentas', campos: { categoria: 'lead', clave: '', valor: '', prioridad: 3 } },
+  guardar_bd: {
+    modo: 'clasico',
+    tabla: 'base_cuentas',
+    campos: { categoria: 'lead', clave: '', valor: '', prioridad: 3 },
+    operacion: 'insert',
+    tabla_id: null,
+    tabla_nombre: '',
+    mapeo: [],
+    filtros: [],
+    variable_resultado: ''
+  },
   buscar_conocimiento: { consulta: '{{ultima_respuesta}}', categorias: [], variable_destino: 'resultado_busqueda', max_resultados: 5 },
   respuesta_ia: { instrucciones: '', usar_conocimiento: true, usar_variables: true, temperatura: 0.7 },
   crear_tarea: { titulo: '', descripcion: '', tipo: 'otro', prioridad: 'media', asignar_a: 'auto' },
@@ -43,7 +53,7 @@ const DATOS_DEFAULT = {
     extracciones: [],
     temperatura: 0.3
   },
-  usar_agente: { agente_id: null, mensaje_transicion: 'Te voy a conectar con nuestro asistente especializado...' },
+  usar_agente: { agente_id: null, agente_nombre: '', agente_icono: '', mensaje_transicion: 'Te voy a conectar con nuestro asistente especializado...', agentes_equipo: [] },
   esperar: { mensaje_espera: '', variable_destino: '' },
   fin: { mensaje_despedida: '', accion: 'cerrar' }
 }

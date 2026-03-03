@@ -6,7 +6,7 @@ const NODOS_DISPONIBLES = [
   { tipo: 'pregunta', label: 'Pregunta', icon: '❓', desc: 'Pedir datos al usuario', color: '#f59e0b' },
   { tipo: 'condicion', label: 'Condicion', icon: '🔀', desc: 'Si/entonces (bifurcar)', color: '#ec4899' },
   { tipo: 'guardar_variable', label: 'Variable', icon: '📝', desc: 'Guardar dato en variable', color: '#6366f1' },
-  { tipo: 'guardar_bd', label: 'Guardar BD', icon: '💾', desc: 'Escribir en base de datos', color: '#10b981' },
+  { tipo: 'guardar_bd', label: 'Datos BD', icon: '💾', desc: 'Insertar, buscar o actualizar en tus tablas personalizadas', color: '#10b981' },
   { tipo: 'buscar_conocimiento', label: 'Conocimiento', icon: '🔍', desc: 'Buscar en entrenador IA', color: '#eab308' },
   { tipo: 'respuesta_ia', label: 'Respuesta IA', icon: '🤖', desc: 'GPT responde con contexto', color: '#8b5cf6' },
   { tipo: 'crear_tarea', label: 'Crear Tarea', icon: '📋', desc: 'Asignar tarea a equipo', color: '#f97316' },
