@@ -398,21 +398,48 @@ export function AgendarCitaNode({ data, selected }) {
   )
 }
 
-export function UsarAgenteNode({ data, selected }) {
-  const equipo = data.agentes_equipo || []
+export function UsarAgenteNode({ data, selected, id }) {
+  const updateNodeInternals = useUpdateNodeInternals()
+  const salidas = data.salidas || []
+
+  useEffect(() => {
+    updateNodeInternals(id)
+  }, [id, salidas.length, updateNodeInternals])
+
   return (
-    <div style={{ position: 'relative' }}>
+    <div style={{ position: 'relative', paddingBottom: salidas.length > 0 ? 22 : 0 }}>
       <Handle type="target" position={Position.Top} style={handleStyle} />
       <BaseNode data={{ texto: data.agente_nombre || data._agente_nombre || data.mensaje_transicion || 'Delegar a agente IA' }} tipo="usar_agente" selected={selected} />
-      {equipo.length > 0 && (
-        <div style={{
-          position: 'absolute', bottom: 4, right: 4,
-          background: '#8b5cf6', color: '#fff',
-          borderRadius: 10, fontSize: 9, padding: '1px 5px',
-          fontWeight: 700, lineHeight: 1.5, pointerEvents: 'none'
-        }}>
-          {equipo.map(a => a.agente_icono || '🤖').join('')} {equipo.length}
-        </div>
+      {salidas.length > 0 ? (
+        <>
+          {salidas.map((s, i) => (
+            <Handle
+              key={`h_${s.id}`}
+              type="source"
+              position={Position.Bottom}
+              id={s.id}
+              style={{
+                ...handleStyleLarge,
+                left: `${((i + 1) / (salidas.length + 1)) * 100}%`,
+                background: '#8b5cf6'
+              }}
+            />
+          ))}
+          {salidas.map((s, i) => {
+            const desc = s.descripcion || s.id
+            return (
+              <span
+                key={`l_${s.id}`}
+                className="flow-handle-label flow-handle-label-agente"
+                style={{ left: `${((i + 1) / (salidas.length + 1)) * 100}%` }}
+              >
+                {desc.length > 18 ? desc.substring(0, 18) + '…' : desc}
+              </span>
+            )
+          })}
+        </>
+      ) : (
+        <Handle type="source" position={Position.Bottom} style={handleStyle} />
       )}
     </div>
   )

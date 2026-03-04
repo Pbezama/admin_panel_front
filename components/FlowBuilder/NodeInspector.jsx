@@ -1207,87 +1207,68 @@ export default function NodeInspector({ nodo, onUpdate, onDelete }) {
                 rows={2}
               />
             </label>
-            {/* EQUIPO DE AGENTES DELEGABLES */}
-            {datos.agente_id && (
-              <div className="flow-field">
-                <span style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <span>Agentes delegables</span>
-                  <button
-                    type="button"
-                    className="flow-agente-crear-btn"
-                    onClick={() => {
-                      const idsEnEquipo = new Set((datos.agentes_equipo || []).map(a => a.agente_id))
-                      const disponibles = agentes.filter(a => a.id !== datos.agente_id && !idsEnEquipo.has(a.id))
-                      if (!disponibles.length) return
-                      const ag = disponibles[0]
-                      actualizar('agentes_equipo', [
-                        ...(datos.agentes_equipo || []),
-                        { agente_id: ag.id, agente_nombre: ag.nombre, agente_icono: ag.icono || '🤖', cuando_delegar: '' }
-                      ])
-                    }}
-                  >+ Agregar</button>
-                </span>
-
-                {!(datos.agentes_equipo || []).length && (
-                  <div className="flow-field-info" style={{ marginTop: 6 }}>
-                    Sin equipo — el agente opera solo y finaliza con [FINALIZAR].
-                  </div>
-                )}
-
-                {(datos.agentes_equipo || []).map((miembro, idx) => (
-                  <div key={idx} style={{ background: '#f9fafb', border: '1px solid #e5e7eb', borderRadius: 6, padding: 8, marginTop: 8 }}>
-                    <div style={{ display: 'flex', gap: 6, alignItems: 'center', marginBottom: 6 }}>
-                      <span style={{ fontSize: 16 }}>{miembro.agente_icono || '🤖'}</span>
-                      <select
-                        value={miembro.agente_id || ''}
-                        onChange={e => {
-                          const ag = agentes.find(a => a.id === Number(e.target.value))
-                          if (!ag) return
-                          const eq = [...(datos.agentes_equipo || [])]
-                          eq[idx] = { ...eq[idx], agente_id: ag.id, agente_nombre: ag.nombre, agente_icono: ag.icono || '🤖' }
-                          actualizar('agentes_equipo', eq)
-                        }}
-                        style={{ flex: 1, padding: '3px 6px', borderRadius: 4, border: '1px solid #d1d5db', fontSize: 12 }}
-                      >
-                        {agentes
-                          .filter(a => a.id !== datos.agente_id &&
-                            !(datos.agentes_equipo || []).some((m, i) => i !== idx && m.agente_id === a.id))
-                          .map(a => <option key={a.id} value={a.id}>{a.icono || '🤖'} {a.nombre} {a.estado !== 'activo' ? `(${a.estado})` : ''}</option>)
-                        }
-                      </select>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          const eq = [...(datos.agentes_equipo || [])]
-                          eq.splice(idx, 1)
-                          actualizar('agentes_equipo', eq)
-                        }}
-                        style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', fontSize: 18, lineHeight: 1 }}
-                      >×</button>
-                    </div>
-                    <label className="flow-field" style={{ marginBottom: 0 }}>
-                      <span style={{ fontSize: 11, color: '#6b7280' }}>Cuándo delegar a {miembro.agente_nombre}</span>
-                      <textarea
-                        value={miembro.cuando_delegar || ''}
-                        onChange={e => {
-                          const eq = [...(datos.agentes_equipo || [])]
-                          eq[idx] = { ...eq[idx], cuando_delegar: e.target.value }
-                          actualizar('agentes_equipo', eq)
-                        }}
-                        placeholder="Ej: Cuando el usuario tenga problemas técnicos o errores de software"
-                        rows={2}
-                        style={{ fontSize: 12 }}
-                      />
-                    </label>
-                  </div>
-                ))}
+            {/* SALIDAS DEL AGENTE */}
+            <div className="flow-field">
+              <span>Salidas del agente</span>
+              <div className="flow-field-info" style={{ marginBottom: 6 }}>
+                Cuando el agente finalice, elegira automaticamente una salida. Conecta cada salida a otro nodo (otro agente, mensaje, fin, etc.)
               </div>
-            )}
+              {(datos.salidas || []).map((salida, i) => (
+                <div key={i} className="flow-reconocer-salida-row">
+                  <input
+                    value={salida.id || ''}
+                    onChange={e => {
+                      const salidas = [...(datos.salidas || [])]
+                      salidas[i] = { ...salidas[i], id: e.target.value }
+                      actualizar('salidas', salidas)
+                    }}
+                    placeholder="id_salida"
+                    style={{ width: 90 }}
+                  />
+                  <input
+                    value={salida.descripcion || ''}
+                    onChange={e => {
+                      const salidas = [...(datos.salidas || [])]
+                      salidas[i] = { ...salidas[i], descripcion: e.target.value }
+                      actualizar('salidas', salidas)
+                    }}
+                    placeholder="Descripcion (ej: Cliente satisfecho)"
+                    style={{ flex: 1 }}
+                  />
+                  <button
+                    className="flow-btn-mini"
+                    onClick={() => {
+                      const salidas = [...(datos.salidas || [])]
+                      salidas.splice(i, 1)
+                      actualizar('salidas', salidas)
+                    }}
+                  >x</button>
+                </div>
+              ))}
+              <button
+                className="flow-btn-add"
+                onClick={() => {
+                  const salidas = [...(datos.salidas || [])]
+                  salidas.push({ id: `salida_${salidas.length + 1}`, descripcion: '' })
+                  actualizar('salidas', salidas)
+                }}
+              >+ Agregar salida</button>
+            </div>
+
+            <label className="flow-field">
+              <span>Variable resultado</span>
+              <input
+                value={datos.variable_resultado || ''}
+                onChange={e => actualizar('variable_resultado', e.target.value)}
+                placeholder="resultado_agente"
+              />
+              <span style={{ fontSize: 10, color: '#6b7280' }}>La ultima respuesta del agente se guardara en esta variable</span>
+            </label>
 
             <div className="flow-field-info">
-              {(datos.agentes_equipo || []).length > 0
-                ? `Equipo configurado: ${(datos.agentes_equipo || []).length} agente(s) delegable(s). El agente primario emite [DELEGAR:id] cuando necesita a un especialista.`
-                : 'Nodo terminal: el flujo no continua despues. El agente decide cuando finalizar.'}
+              {(datos.salidas || []).length > 0
+                ? `${(datos.salidas || []).length} salida(s) configurada(s). El agente elige automaticamente la salida al finalizar.`
+                : 'Sin salidas: el flujo continuara por la conexion directa al finalizar el agente.'}
             </div>
           </>
         )}

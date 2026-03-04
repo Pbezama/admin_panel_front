@@ -20,7 +20,8 @@ const ICON_POR_TIPO = {
   buscar_conocimiento: '🔍',
   respuesta_ia: '🤖',
   reconocer_respuesta: '🧠',
-  crear_tarea: '📋'
+  crear_tarea: '📋',
+  usar_agente: '🤖'
 }
 
 export default function VariablesPanel({ nodes }) {
@@ -75,6 +76,10 @@ export default function VariablesPanel({ nodes }) {
 
         case 'crear_tarea':
           add('ultima_tarea_id', 'Crear Tarea', 'crear_tarea')
+          break
+
+        case 'usar_agente':
+          add(d.variable_resultado || 'resultado_agente', 'Agente IA', 'usar_agente')
           break
       }
     }

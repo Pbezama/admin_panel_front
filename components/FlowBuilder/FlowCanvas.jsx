@@ -53,7 +53,7 @@ const DATOS_DEFAULT = {
     extracciones: [],
     temperatura: 0.3
   },
-  usar_agente: { agente_id: null, agente_nombre: '', agente_icono: '', mensaje_transicion: 'Te voy a conectar con nuestro asistente especializado...', agentes_equipo: [] },
+  usar_agente: { agente_id: null, agente_nombre: '', agente_icono: '', mensaje_transicion: 'Te voy a conectar con nuestro asistente especializado...', salidas: [{ id: 'salida_1', descripcion: 'Conversacion resuelta' }, { id: 'salida_2', descripcion: 'Requiere atencion humana' }], variable_resultado: 'resultado_agente' },
   esperar: { mensaje_espera: '', variable_destino: '' },
   fin: { mensaje_despedida: '', accion: 'cerrar' }
 }
@@ -126,6 +126,15 @@ export default function FlowCanvas({ flujo, onSave, guardando, marcaNombre }) {
             }
           }
           break
+
+        case 'usar_agente': {
+          const salidaAg = sourceNode.data.salidas?.find(s => s.id === params.sourceHandle)
+          if (salidaAg) {
+            condicion = { tipo: 'salida_agente', valor: params.sourceHandle, descripcion: salidaAg.descripcion || '' }
+            label = salidaAg.descripcion || params.sourceHandle
+          }
+          break
+        }
 
         case 'pregunta':
           if (params.sourceHandle === 'si') {
