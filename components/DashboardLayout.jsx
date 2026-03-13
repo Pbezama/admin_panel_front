@@ -21,6 +21,7 @@ const viewTitles = {
   'meta-ads': 'Meta Ads',
   'webchat-config': 'Chat Web',
   'tablas-custom': 'Mis Tablas',
+  'chat-academico': 'Chat Academico',
 }
 
 export default function DashboardLayout({ children }) {

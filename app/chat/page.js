@@ -17,6 +17,8 @@ import AgentesView from '@/components/Views/AgentesView'
 import DashboardLiveView from '@/components/Views/DashboardLiveView'
 import WebChatConfigView from '@/components/Views/WebChatConfigView'
 import TablasCustomView from '@/components/Views/TablasCustomView'
+import GoogleView from '@/components/Views/GoogleView'
+import ChatAcademicoView from '@/components/Views/ChatAcademicoView'
 import DashboardLayout from '@/components/DashboardLayout'
 import { RotateCcw, Send, ChevronDown, ChevronUp, Database, Sparkles, PanelRightOpen, PanelRightClose } from 'lucide-react'
 import '@/styles/Chat.css'
@@ -742,6 +744,10 @@ El usuario ya aprobo esta delegacion. Procede a pedir confirmacion para agregar 
         return <WebChatConfigView />
       case 'tablas-custom':
         return <TablasCustomView />
+      case 'google':
+        return <GoogleView />
+      case 'chat-academico':
+        return <ChatAcademicoView />
       default:
         return renderChat()
     }

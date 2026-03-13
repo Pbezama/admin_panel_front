@@ -20,7 +20,9 @@ import {
   Menu,
   Bot,
   Globe,
-  Table
+  Table,
+  Cloud,
+  GraduationCap
 } from 'lucide-react'
 
 const navGroups = [
@@ -46,6 +48,18 @@ const navGroups = [
     label: 'Canales',
     items: [
       { id: 'webchat-config', label: 'Chat Web', icon: Globe, desc: 'Widget embebible para sitios web' },
+    ]
+  },
+  {
+    label: 'Integraciones',
+    items: [
+      { id: 'google', label: 'Google', icon: Cloud, desc: 'Calendar, Drive, Sheets y Docs' },
+    ]
+  },
+  {
+    label: 'PreUCV',
+    items: [
+      { id: 'chat-academico', label: 'Chat Academico', icon: GraduationCap, desc: 'Configuracion ChatBot PreUCV', visiblePara: 'preucv' },
     ]
   }
 ]
@@ -130,10 +144,17 @@ export default function Sidebar({ collapsed, onToggleCollapse, mobileOpen, onClo
 
         {/* Navigation */}
         <nav className="sidebar-nav">
-          {navGroups.map((group) => (
+          {navGroups.map((group) => {
+            const itemsVisibles = group.items.filter(item => {
+              if (!item.visiblePara) return true
+              const nombreMarcaLower = (marcaActiva?.nombre_marca || '').toLowerCase()
+              return nombreMarcaLower.includes(item.visiblePara)
+            })
+            if (itemsVisibles.length === 0) return null
+            return (
             <div key={group.label} className="sidebar-group">
               <div className="sidebar-group-label">{group.label}</div>
-              {group.items.map((item) => {
+              {itemsVisibles.map((item) => {
                 const Icon = item.icon
                 const isActive = vistaActiva === item.id
                 return (
@@ -152,7 +173,8 @@ export default function Sidebar({ collapsed, onToggleCollapse, mobileOpen, onClo
                 )
               })}
             </div>
-          ))}
+            )
+          })}
         </nav>
 
         {/* User Footer */}

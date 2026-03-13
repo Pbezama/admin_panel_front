@@ -362,6 +362,125 @@
   background: #fafbfc;
 }
 
+/* ── Secciones de configuracion ── */
+.agente-secciones-bar {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 20px;
+  border-bottom: 1px solid #e2e8f0;
+  padding-bottom: 0;
+}
+.agente-seccion-btn {
+  padding: 8px 16px;
+  font-size: 12px;
+  font-weight: 500;
+  color: #64748b;
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  cursor: pointer;
+  transition: all 0.15s;
+  margin-bottom: -1px;
+}
+.agente-seccion-btn:hover { color: #334155; }
+.agente-seccion-btn.active {
+  color: #8b5cf6;
+  border-bottom-color: #8b5cf6;
+}
+.agente-seccion-preview {
+  margin-left: auto;
+  font-size: 11px;
+  color: #94a3b8;
+}
+.agente-seccion-preview.active {
+  color: #059669;
+  border-bottom-color: #059669;
+}
+
+.agente-config-section-header {
+  margin-bottom: 20px;
+}
+.agente-config-section-header h4 {
+  font-size: 15px;
+  font-weight: 600;
+  color: #1e293b;
+  margin: 0 0 4px;
+}
+.agente-config-section-header p {
+  font-size: 12px;
+  color: #94a3b8;
+  margin: 0;
+}
+
+.agente-field-hint {
+  font-size: 11px;
+  color: #94a3b8;
+  font-weight: 400;
+  text-transform: none;
+  letter-spacing: 0;
+}
+.agente-field-hint-warning {
+  color: #f59e0b;
+}
+
+/* Prompt preview */
+.agente-prompt-preview {
+  background: #0f172a;
+  border-radius: 10px;
+  margin-bottom: 20px;
+  overflow: hidden;
+}
+.agente-prompt-preview-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 16px;
+  background: #1e293b;
+  font-size: 12px;
+  color: #94a3b8;
+}
+.agente-prompt-preview-chars {
+  font-size: 11px;
+  color: #64748b;
+}
+.agente-prompt-preview-text {
+  padding: 16px;
+  font-size: 12px;
+  color: #e2e8f0;
+  white-space: pre-wrap;
+  word-break: break-word;
+  line-height: 1.6;
+  max-height: 400px;
+  overflow-y: auto;
+  margin: 0;
+  font-family: 'Cascadia Code', 'Fira Code', 'Consolas', monospace;
+}
+
+/* Prompt custom toggle */
+.agente-prompt-custom-toggle {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.agente-toggle-label {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+}
+.agente-toggle-label > span {
+  font-size: 13px;
+  font-weight: 500;
+  color: #334155;
+}
+
+.agente-textarea-monospace {
+  font-family: 'Cascadia Code', 'Fira Code', 'Consolas', monospace !important;
+  font-size: 13px !important;
+  line-height: 1.5 !important;
+  background: #f8fafc !important;
+}
+
 /* ── Tab: Instrucciones ── */
 .agente-instrucciones-grid {
   display: grid;
@@ -804,4 +923,6 @@
   .agente-instrucciones-grid { grid-template-columns: 1fr; }
   .agente-monitor-stats { grid-template-columns: 1fr; }
   .agente-param-row { grid-template-columns: 1fr 1fr; }
+  .agente-secciones-bar { flex-wrap: wrap; }
+  .agente-seccion-preview { margin-left: 0; }
 }

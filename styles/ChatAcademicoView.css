@@ -1,0 +1,827 @@
+/* =====================================================
+   Chat Academico PreUCV - Styles
+   ===================================================== */
+
+.ca-view {
+  padding: 24px;
+  max-width: 960px;
+  margin: 0 auto;
+}
+
+/* Loading */
+.ca-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 80px 0;
+  color: #94a3b8;
+}
+
+.ca-spinner {
+  animation: ca-spin 1s linear infinite;
+}
+
+@keyframes ca-spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+/* Activar */
+.ca-activar {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  padding: 80px 40px;
+  text-align: center;
+}
+
+.ca-activar-icon {
+  color: hsl(222, 35%, 28%);
+  opacity: 0.6;
+}
+
+.ca-activar h2 {
+  font-size: 24px;
+  font-weight: 600;
+  color: #e2e8f0;
+  margin: 0;
+}
+
+.ca-activar p {
+  color: #94a3b8;
+  max-width: 480px;
+  line-height: 1.5;
+}
+
+/* Mensaje toast */
+.ca-mensaje {
+  padding: 12px 16px;
+  border-radius: 8px;
+  margin-bottom: 16px;
+  font-size: 14px;
+  animation: ca-fadeIn 0.3s ease;
+}
+
+.ca-mensaje-exito {
+  background: rgba(34, 197, 94, 0.15);
+  color: #22c55e;
+  border: 1px solid rgba(34, 197, 94, 0.3);
+}
+
+.ca-mensaje-error {
+  background: rgba(239, 68, 68, 0.15);
+  color: #ef4444;
+  border: 1px solid rgba(239, 68, 68, 0.3);
+}
+
+@keyframes ca-fadeIn {
+  from { opacity: 0; transform: translateY(-8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Tabs */
+.ca-tabs {
+  display: flex;
+  gap: 4px;
+  background: hsl(222, 25%, 12%);
+  padding: 4px;
+  border-radius: 10px;
+  margin-bottom: 24px;
+}
+
+.ca-tab {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 16px;
+  background: transparent;
+  border: none;
+  border-radius: 8px;
+  color: #94a3b8;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  transition: all 0.2s;
+}
+
+.ca-tab:hover {
+  color: #e2e8f0;
+  background: hsl(222, 25%, 18%);
+}
+
+.ca-tab.active {
+  background: hsl(222, 35%, 28%);
+  color: #fff;
+}
+
+/* Sub tabs */
+.ca-sub-tabs {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+}
+
+.ca-sub-tab {
+  padding: 8px 16px;
+  background: hsl(222, 25%, 15%);
+  border: 1px solid hsl(222, 20%, 22%);
+  border-radius: 6px;
+  color: #94a3b8;
+  cursor: pointer;
+  font-size: 13px;
+  transition: all 0.2s;
+}
+
+.ca-sub-tab:hover {
+  color: #e2e8f0;
+  border-color: hsl(222, 25%, 30%);
+}
+
+.ca-sub-tab.active {
+  background: hsl(222, 35%, 28%);
+  color: #fff;
+  border-color: hsl(222, 35%, 38%);
+}
+
+/* Content */
+.ca-content {
+  min-height: 400px;
+}
+
+.ca-tab-content {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+/* Section */
+.ca-section {
+  background: hsl(222, 25%, 12%);
+  border: 1px solid hsl(222, 20%, 18%);
+  border-radius: 10px;
+  padding: 20px;
+}
+
+.ca-section h3 {
+  font-size: 15px;
+  font-weight: 600;
+  color: #e2e8f0;
+  margin: 0 0 16px;
+}
+
+.ca-section-header h3 {
+  margin-bottom: 4px;
+}
+
+.ca-section-ayuda {
+  color: #64748b;
+  font-size: 13px;
+  margin: 0 0 12px;
+}
+
+/* Form elements */
+.ca-label {
+  display: block;
+  font-size: 13px;
+  font-weight: 500;
+  color: #94a3b8;
+  margin-bottom: 6px;
+}
+
+.ca-input {
+  width: 100%;
+  padding: 10px 12px;
+  background: hsl(222, 25%, 15%);
+  border: 1px solid hsl(222, 20%, 22%);
+  border-radius: 6px;
+  color: #e2e8f0;
+  font-size: 14px;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.ca-input:focus {
+  border-color: hsl(222, 35%, 40%);
+}
+
+.ca-input-sm {
+  max-width: 200px;
+}
+
+.ca-textarea {
+  width: 100%;
+  padding: 12px;
+  background: hsl(222, 25%, 15%);
+  border: 1px solid hsl(222, 20%, 22%);
+  border-radius: 6px;
+  color: #e2e8f0;
+  font-size: 14px;
+  font-family: inherit;
+  resize: vertical;
+  outline: none;
+  transition: border-color 0.2s;
+  line-height: 1.5;
+}
+
+.ca-textarea:focus {
+  border-color: hsl(222, 35%, 40%);
+}
+
+.ca-textarea-sm {
+  min-height: 60px;
+}
+
+.ca-range {
+  width: 100%;
+  accent-color: hsl(222, 35%, 40%);
+}
+
+.ca-form-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 16px;
+}
+
+.ca-field {
+  margin-bottom: 12px;
+}
+
+.ca-toggle-field {
+  padding: 8px 16px;
+  border-radius: 6px;
+  border: 1px solid hsl(222, 20%, 22%);
+  background: hsl(222, 25%, 15%);
+  color: #94a3b8;
+  cursor: pointer;
+  font-size: 13px;
+  transition: all 0.2s;
+}
+
+.ca-toggle-field.active {
+  background: rgba(34, 197, 94, 0.15);
+  color: #22c55e;
+  border-color: rgba(34, 197, 94, 0.3);
+}
+
+/* Buttons */
+.ca-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 20px;
+  border-radius: 8px;
+  border: none;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.ca-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.ca-btn-primary {
+  background: hsl(222, 35%, 28%);
+  color: #fff;
+}
+
+.ca-btn-primary:hover:not(:disabled) {
+  background: hsl(222, 35%, 35%);
+}
+
+.ca-btn-danger {
+  background: rgba(239, 68, 68, 0.15);
+  color: #ef4444;
+}
+
+.ca-btn-danger:hover:not(:disabled) {
+  background: rgba(239, 68, 68, 0.25);
+}
+
+.ca-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  padding-top: 8px;
+}
+
+/* Herramientas */
+.ca-nueva-herramienta {
+  background: hsl(222, 25%, 12%);
+  border: 1px solid hsl(222, 20%, 18%);
+  border-radius: 10px;
+  padding: 20px;
+}
+
+.ca-nueva-herramienta h3 {
+  font-size: 15px;
+  font-weight: 600;
+  color: #e2e8f0;
+  margin: 0 0 12px;
+}
+
+.ca-nueva-form {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.ca-herramientas-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.ca-herramientas-list h3 {
+  font-size: 15px;
+  font-weight: 600;
+  color: #e2e8f0;
+  margin: 0;
+}
+
+.ca-herramienta-card {
+  background: hsl(222, 25%, 12%);
+  border: 1px solid hsl(222, 20%, 18%);
+  border-radius: 8px;
+  overflow: hidden;
+  transition: border-color 0.2s;
+}
+
+.ca-herramienta-card:hover {
+  border-color: hsl(222, 20%, 25%);
+}
+
+.ca-herramienta-card.ca-inactiva {
+  opacity: 0.5;
+}
+
+.ca-herramienta-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  cursor: pointer;
+  user-select: none;
+}
+
+.ca-herramienta-info {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 1;
+  min-width: 0;
+}
+
+.ca-herramienta-badge {
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  color: #fff;
+  white-space: nowrap;
+}
+
+.ca-herramienta-nombre {
+  font-size: 14px;
+  color: #e2e8f0;
+  font-weight: 500;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ca-herramienta-semilla {
+  font-size: 11px;
+  color: #64748b;
+  background: hsl(222, 20%, 18%);
+  padding: 2px 6px;
+  border-radius: 4px;
+  white-space: nowrap;
+}
+
+.ca-herramienta-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #64748b;
+}
+
+.ca-toggle-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  display: flex;
+}
+
+.ca-toggle-on {
+  color: #22c55e;
+}
+
+.ca-toggle-off {
+  color: #64748b;
+}
+
+.ca-herramienta-body {
+  padding: 0 16px 16px;
+  border-top: 1px solid hsl(222, 20%, 18%);
+  padding-top: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.ca-herramienta-footer {
+  display: flex;
+  gap: 8px;
+  padding-top: 8px;
+}
+
+.ca-nota {
+  font-size: 13px;
+  color: #64748b;
+  font-style: italic;
+  margin: 4px 0;
+}
+
+/* Historial */
+.ca-historial-section {
+  margin-top: 32px;
+  border-top: 1px solid hsl(222, 20%, 18%);
+  padding-top: 16px;
+}
+
+.ca-historial-toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: none;
+  border: none;
+  color: #64748b;
+  cursor: pointer;
+  font-size: 14px;
+  padding: 8px 0;
+  width: 100%;
+}
+
+.ca-historial-toggle:hover {
+  color: #94a3b8;
+}
+
+.ca-historial-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 12px 0;
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.ca-historial-vacio {
+  color: #64748b;
+  font-size: 13px;
+  text-align: center;
+  padding: 16px;
+}
+
+.ca-historial-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 13px;
+  padding: 6px 0;
+  border-bottom: 1px solid hsl(222, 20%, 15%);
+}
+
+.ca-historial-fecha {
+  color: #64748b;
+  min-width: 100px;
+}
+
+.ca-historial-usuario {
+  color: #94a3b8;
+  font-weight: 500;
+}
+
+.ca-historial-badge {
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 500;
+}
+
+.ca-badge-crear { background: rgba(34, 197, 94, 0.15); color: #22c55e; }
+.ca-badge-actualizar { background: rgba(59, 130, 246, 0.15); color: #3b82f6; }
+.ca-badge-activar { background: rgba(34, 197, 94, 0.15); color: #22c55e; }
+.ca-badge-desactivar { background: rgba(239, 68, 68, 0.15); color: #ef4444; }
+.ca-badge-eliminar { background: rgba(239, 68, 68, 0.15); color: #ef4444; }
+
+.ca-historial-seccion {
+  color: #64748b;
+}
+
+/* Responsive */
+@media (max-width: 640px) {
+  .ca-view {
+    padding: 16px;
+  }
+
+  .ca-tabs {
+    flex-direction: column;
+  }
+
+  .ca-form-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .ca-herramienta-info {
+    flex-wrap: wrap;
+  }
+}
+
+/* =====================================================
+   Chat de Prueba
+   ===================================================== */
+
+.ca-chat-prueba {
+  gap: 0;
+  background: hsl(222, 25%, 10%);
+  border: 1px solid hsl(222, 20%, 18%);
+  border-radius: 10px;
+  overflow: hidden;
+  height: 600px;
+  display: flex;
+  flex-direction: column;
+}
+
+.ca-chat-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  background: hsl(222, 25%, 12%);
+  border-bottom: 1px solid hsl(222, 20%, 18%);
+}
+
+.ca-chat-header-info {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: #e2e8f0;
+}
+
+.ca-chat-title {
+  font-size: 14px;
+  font-weight: 600;
+  display: block;
+}
+
+.ca-chat-badge {
+  font-size: 11px;
+  color: #f59e0b;
+  font-weight: 500;
+}
+
+.ca-btn-ghost {
+  background: transparent;
+  color: #94a3b8;
+  padding: 6px 12px;
+  font-size: 13px;
+}
+
+.ca-btn-ghost:hover {
+  color: #e2e8f0;
+  background: hsl(222, 25%, 18%);
+}
+
+/* Messages */
+.ca-chat-messages {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.ca-chat-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  height: 100%;
+  color: #64748b;
+  text-align: center;
+}
+
+.ca-chat-empty-icon {
+  opacity: 0.4;
+}
+
+.ca-chat-empty p {
+  margin: 0;
+  font-size: 14px;
+}
+
+.ca-chat-empty-hint {
+  font-size: 12px;
+  color: #475569;
+}
+
+.ca-chat-msg {
+  display: flex;
+  gap: 8px;
+  max-width: 85%;
+}
+
+.ca-chat-msg-user {
+  align-self: flex-end;
+  flex-direction: row-reverse;
+}
+
+.ca-chat-msg-bot {
+  align-self: flex-start;
+}
+
+.ca-chat-msg-avatar {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.ca-avatar-user {
+  background: hsl(222, 35%, 28%);
+  color: #fff;
+}
+
+.ca-avatar-bot {
+  background: hsl(222, 25%, 18%);
+  color: #94a3b8;
+}
+
+.ca-chat-msg-bubble {
+  padding: 10px 14px;
+  border-radius: 12px;
+  font-size: 14px;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.ca-bubble-user {
+  background: hsl(222, 35%, 28%);
+  color: #fff;
+  border-bottom-right-radius: 4px;
+}
+
+.ca-bubble-bot {
+  background: hsl(222, 25%, 15%);
+  color: #e2e8f0;
+  border: 1px solid hsl(222, 20%, 20%);
+  border-bottom-left-radius: 4px;
+}
+
+.ca-typing {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #94a3b8;
+  font-size: 13px;
+}
+
+/* Tool calls */
+.ca-chat-tools {
+  align-self: flex-start;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-width: 85%;
+  padding-left: 36px;
+}
+
+.ca-chat-tool-call {
+  background: hsl(222, 25%, 13%);
+  border: 1px solid hsl(222, 20%, 20%);
+  border-radius: 8px;
+  padding: 8px 12px;
+  font-size: 12px;
+}
+
+.ca-chat-tool-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: #94a3b8;
+  margin-bottom: 4px;
+}
+
+.ca-chat-tool-name {
+  font-weight: 600;
+  color: #e2e8f0;
+}
+
+.ca-chat-tool-tipo {
+  font-size: 10px;
+  padding: 1px 6px;
+  border-radius: 3px;
+  background: hsl(222, 25%, 18%);
+  color: #64748b;
+}
+
+.ca-chat-tool-args {
+  color: #64748b;
+  font-family: monospace;
+  font-size: 11px;
+  margin-bottom: 4px;
+  word-break: break-all;
+}
+
+.ca-chat-tool-result {
+  color: #94a3b8;
+  font-size: 12px;
+  padding-top: 4px;
+  border-top: 1px solid hsl(222, 20%, 18%);
+}
+
+/* Error */
+.ca-chat-error {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  color: #ef4444;
+  font-size: 13px;
+  background: rgba(239, 68, 68, 0.08);
+  border-top: 1px solid rgba(239, 68, 68, 0.2);
+}
+
+/* Input */
+.ca-chat-input-area {
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+  padding: 12px 16px;
+  background: hsl(222, 25%, 12%);
+  border-top: 1px solid hsl(222, 20%, 18%);
+}
+
+.ca-chat-input {
+  flex: 1;
+  padding: 10px 12px;
+  background: hsl(222, 25%, 15%);
+  border: 1px solid hsl(222, 20%, 22%);
+  border-radius: 8px;
+  color: #e2e8f0;
+  font-size: 14px;
+  font-family: inherit;
+  resize: none;
+  outline: none;
+  max-height: 120px;
+  transition: border-color 0.2s;
+}
+
+.ca-chat-input:focus {
+  border-color: hsl(222, 35%, 40%);
+}
+
+.ca-chat-input:disabled {
+  opacity: 0.5;
+}
+
+.ca-chat-send {
+  width: 40px;
+  height: 40px;
+  border-radius: 8px;
+  border: none;
+  background: hsl(222, 35%, 28%);
+  color: #fff;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.2s;
+  flex-shrink: 0;
+}
+
+.ca-chat-send:hover:not(:disabled) {
+  background: hsl(222, 35%, 35%);
+}
+
+.ca-chat-send:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}

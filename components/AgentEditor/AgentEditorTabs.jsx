@@ -7,7 +7,7 @@ import TabConocimiento from './TabConocimiento'
 import TabMonitoreo from './TabMonitoreo'
 
 const TABS = [
-  { id: 'instrucciones', label: 'Instrucciones' },
+  { id: 'instrucciones', label: 'Configuracion' },
   { id: 'herramientas', label: 'Herramientas' },
   { id: 'conocimiento', label: 'Conocimiento' },
   { id: 'monitoreo', label: 'Monitoreo' }
