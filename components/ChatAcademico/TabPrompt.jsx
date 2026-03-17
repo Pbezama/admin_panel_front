@@ -9,6 +9,7 @@ const SECCIONES = [
   { id: 'prompt_estilo', label: 'Estilo de Respuesta', placeholder: 'Ej: Utiliza un lenguaje natural, chileno, evitando tecnicismos...', ayuda: 'Como debe comunicarse el bot (tono, formato, idioma).' },
   { id: 'prompt_reglas', label: 'Reglas de Comunicacion', placeholder: 'Ej: No menciones precios. No repitas informacion. Usa emojis...', ayuda: 'Reglas estrictas que el bot debe seguir siempre.' },
   { id: 'prompt_consideraciones', label: 'Consideraciones Especificas', placeholder: 'Ej: Para estudiantes Blender, las clases de matematica son presenciales u online...', ayuda: 'Informacion especifica del negocio que el bot debe conocer.' },
+  { id: 'prompt_actividades', label: 'Actividades Semanales', placeholder: 'Ej: Semana del 28 de abril\n- Clases anuales sesion n3\n- Charla: El poder de las metas...', ayuda: 'Informacion de actividades de la semana. Se envia como contexto al bot. Dejar vacio si no aplica.' },
 ]
 
 export default function TabPrompt({ config, setConfig, mostrarMensaje, recargarHistorial }) {
@@ -19,6 +20,7 @@ export default function TabPrompt({ config, setConfig, mostrarMensaje, recargarH
     prompt_estilo: config?.prompt_estilo || '',
     prompt_reglas: config?.prompt_reglas || '',
     prompt_consideraciones: config?.prompt_consideraciones || '',
+    prompt_actividades: config?.prompt_actividades || '',
   })
 
   const handleChange = (campo, valor) => {

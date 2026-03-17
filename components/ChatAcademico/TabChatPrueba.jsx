@@ -15,6 +15,7 @@ export default function TabChatPrueba() {
   const [enviando, setEnviando] = useState(false)
   const [error, setError] = useState(null)
   const [expandidos, setExpandidos] = useState({}) // controla que bloques estan expandidos
+  const [conversationId, setConversationId] = useState(null) // ID persistente en Supabase
   const chatRef = useRef(null)
   const inputRef = useRef(null)
   const turnoRef = useRef(0) // contador de turnos
@@ -44,7 +45,8 @@ export default function TabChatPrueba() {
     try {
       const res = await api.probarChatAcademico({
         mensaje: texto,
-        historial
+        historial,
+        conversation_id: conversationId
       })
 
       if (res.success) {
@@ -68,6 +70,8 @@ export default function TabChatPrueba() {
 
         // Actualizar historial completo (con tool_calls para memoria)
         setHistorial(res.historial_actualizado || [])
+        // Guardar conversation_id para reutilizar en siguientes mensajes
+        if (res.conversation_id) setConversationId(res.conversation_id)
       } else {
         setError(res.error || 'Error al procesar mensaje')
       }
@@ -84,6 +88,7 @@ export default function TabChatPrueba() {
     setHistorial([])
     setError(null)
     setMensaje('')
+    setConversationId(null)
     turnoRef.current = 0
     setExpandidos({})
   }

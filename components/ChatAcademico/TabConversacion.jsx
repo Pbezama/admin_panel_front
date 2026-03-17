@@ -18,6 +18,9 @@ export default function TabConversacion({ config, setConfig, mostrarMensaje, rec
     temperatura: config?.temperatura ?? 0.7,
     max_tokens: config?.max_tokens ?? 1500,
     parallel_tool_calls: config?.parallel_tool_calls ?? true,
+    max_mensajes_conversacion: config?.max_mensajes_conversacion ?? 60,
+    max_tokens_contexto: config?.max_tokens_contexto ?? 100000,
+    max_iteraciones_tools: config?.max_iteraciones_tools ?? 3,
   })
 
   const handleChange = (campo, valor) => {
@@ -170,6 +173,43 @@ export default function TabConversacion({ config, setConfig, mostrarMensaje, rec
               min={100}
               max={4096}
             />
+          </div>
+          <div className="ca-field">
+            <label className="ca-label">Max mensajes en conversacion</label>
+            <input
+              type="number"
+              className="ca-input ca-input-sm"
+              value={valores.max_mensajes_conversacion}
+              onChange={e => handleChange('max_mensajes_conversacion', parseInt(e.target.value) || 20)}
+              min={10}
+              max={200}
+            />
+            <span className="ca-field-hint">Limite de mensajes en el historial (system + user + assistant + tools)</span>
+          </div>
+          <div className="ca-field">
+            <label className="ca-label">Max tokens de contexto</label>
+            <input
+              type="number"
+              className="ca-input ca-input-sm"
+              value={valores.max_tokens_contexto}
+              onChange={e => handleChange('max_tokens_contexto', parseInt(e.target.value) || 50000)}
+              min={10000}
+              max={128000}
+              step={5000}
+            />
+            <span className="ca-field-hint">Limite de tokens antes de comprimir historial (GPT-4o soporta 128K)</span>
+          </div>
+          <div className="ca-field">
+            <label className="ca-label">Max iteraciones de tools</label>
+            <input
+              type="number"
+              className="ca-input ca-input-sm"
+              value={valores.max_iteraciones_tools}
+              onChange={e => handleChange('max_iteraciones_tools', parseInt(e.target.value) || 1)}
+              min={1}
+              max={10}
+            />
+            <span className="ca-field-hint">Rondas de herramientas antes de forzar respuesta (1-10)</span>
           </div>
           <div className="ca-field">
             <label className="ca-label">Tool calls en paralelo</label>

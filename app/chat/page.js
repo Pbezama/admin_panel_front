@@ -488,16 +488,25 @@ El usuario ya aprobo esta delegacion. Procede a pedir confirmacion para agregar 
         return
       }
 
+      if (respuesta.tipo === 'accion_lote_confirmada' && respuesta.ejecutar?.acciones) {
+        await ejecutarAccionesLote(respuesta.ejecutar.acciones)
+        return
+      }
+
       if (respuesta.tipo === 'accion_confirmada' && respuesta.ejecutar) {
         await ejecutarAccion(respuesta.ejecutar)
         return
       }
 
       if (respuesta.tipo === 'accion_confirmada' && !respuesta.ejecutar && accionPendiente) {
-        await ejecutarAccion({
-          accion: accionPendiente.accion,
-          parametros: accionPendiente.parametros
-        })
+        if (accionPendiente.tipo === 'lote') {
+          await ejecutarAccionesLote(accionPendiente.acciones)
+        } else {
+          await ejecutarAccion({
+            accion: accionPendiente.accion,
+            parametros: accionPendiente.parametros
+          })
+        }
         return
       }
 
@@ -649,6 +658,118 @@ El usuario ya aprobo esta delegacion. Procede a pedir confirmacion para agregar 
     setEnviando(false)
   }
 
+  const ejecutarAccionesLote = async (acciones) => {
+    if (!acciones || acciones.length === 0) {
+      setEnviando(false)
+      return
+    }
+
+    try {
+      const resultados = await Promise.all(
+        acciones.map(async ({ accion, parametros }) => {
+          try {
+            let resultado
+            switch (accion) {
+              case 'agregar':
+                resultado = await api.addDato({
+                  'ID marca': marcaActiva?.id_marca || usuario?.id_marca,
+                  'Nombre marca': marcaActiva?.nombre_marca || usuario?.nombre_marca,
+                  categoria: parametros.categoria,
+                  clave: parametros.clave,
+                  valor: parametros.valor,
+                  prioridad: parametros.prioridad || 3,
+                  fecha_inicio: parametros.fecha_inicio || null,
+                  fecha_caducidad: parametros.fecha_caducidad || null
+                })
+                break
+              case 'modificar':
+                resultado = await api.updateDato(parametros.id_fila, parametros.updates)
+                break
+              case 'desactivar':
+                resultado = await api.deactivateDato(parametros.id_fila)
+                break
+              case 'duplicar':
+                // Para duplicar: buscar original en datosMarca (ya en memoria) y crear copia con cambios
+                const d = datosMarca.find(dm => dm.id === parametros.id_fila)
+                if (d) {
+                  const nuevo = {
+                    'ID marca': marcaActiva?.id_marca || usuario?.id_marca,
+                    'Nombre marca': marcaActiva?.nombre_marca || usuario?.nombre_marca,
+                    categoria: parametros.categoria || d.Categoria || d.categoria,
+                    clave: parametros.clave || d.Clave || d.clave,
+                    valor: parametros.valor || d.Valor || d.valor,
+                    prioridad: parametros.prioridad || d.prioridad,
+                    fecha_inicio: parametros.fecha_inicio || d.fecha_inicio,
+                    fecha_caducidad: parametros.fecha_caducidad || d.fecha_caducidad
+                  }
+                  if (parametros.updates) {
+                    Object.entries(parametros.updates).forEach(([k, v]) => {
+                      if (v !== null) nuevo[k] = v
+                    })
+                  }
+                  resultado = await api.addDato(nuevo)
+                } else {
+                  resultado = { success: false, error: `Registro ID:${parametros.id_fila} no encontrado en datos actuales` }
+                }
+                break
+              default:
+                resultado = { success: false, error: `Accion desconocida: ${accion}` }
+            }
+            return { accion, parametros, ...resultado }
+          } catch (e) {
+            return { accion, parametros, success: false, error: e.message }
+          }
+        })
+      )
+
+      const exitosos = resultados.filter(r => r.success)
+      const fallidos = resultados.filter(r => !r.success)
+
+      // Log
+      try {
+        await api.saveLogAction({
+          usuario_id: usuario?.id,
+          usuario_nombre: usuario?.nombre,
+          id_marca: marcaActiva?.id_marca || usuario?.id_marca,
+          nombre_marca: marcaActiva?.nombre_marca || usuario?.nombre_marca,
+          tipo_accion: 'lote',
+          descripcion: JSON.stringify({ total: acciones.length, exitosos: exitosos.length, fallidos: fallidos.length }),
+          exito: fallidos.length === 0,
+          mensaje_resultado: `${exitosos.length}/${acciones.length} exitosos`
+        })
+      } catch (e) {
+        console.error('Error guardando log lote:', e)
+      }
+
+      let contenido = `${exitosos.length} de ${acciones.length} acciones completadas correctamente.`
+      if (fallidos.length > 0) {
+        contenido += '\n\nErrores:\n' + fallidos.map(f => `- ${f.accion} ${f.parametros?.clave || f.parametros?.id_fila || ''}: ${f.error}`).join('\n')
+      }
+
+      setMensajes(prev => [...prev, {
+        rol: 'assistant',
+        contenido,
+        tipo: fallidos.length === 0 ? 'exito' : 'texto',
+        timestamp: new Date().toISOString()
+      }])
+
+      setAccionPendiente(null)
+      await cargarDatosMarca()
+
+    } catch (err) {
+      console.error('Error ejecutando lote:', err)
+      setMensajes(prev => [...prev, {
+        rol: 'assistant',
+        contenido: `Error ejecutando acciones en lote: ${err.message}`,
+        tipo: 'error',
+        timestamp: new Date().toISOString()
+      }])
+      setAccionPendiente(null)
+    }
+
+    setEnviando(false)
+  }
+
   const handleReiniciarChat = () => {
     reiniciarChat()
     setMensajes([])
@@ -688,7 +809,9 @@ El usuario ya aprobo esta delegacion. Procede a pedir confirmacion para agregar 
     }
 
     if (respuesta.toLowerCase() === 'si' || respuesta.toLowerCase() === 'yes') {
-      if (accionPendiente) {
+      if (accionPendiente && accionPendiente.tipo === 'lote') {
+        await ejecutarAccionesLote(accionPendiente.acciones)
+      } else if (accionPendiente) {
         await ejecutarAccion({
           accion: accionPendiente.accion,
           parametros: accionPendiente.parametros
@@ -790,7 +913,7 @@ El usuario ya aprobo esta delegacion. Procede a pedir confirmacion para agregar 
           {modoActivo === 'controlador' && accionPendiente && (
             <div className="accion-pendiente-indicator">
               <span>*</span>
-              <span>Accion pendiente: <strong>{accionPendiente.accion}</strong></span>
+              <span>Accion pendiente: <strong>{accionPendiente.tipo === 'lote' ? `Lote (${accionPendiente.acciones?.length} acciones)` : accionPendiente.accion}</strong></span>
               <span className="accion-id">
                 {accionPendiente.accion === 'modificar' && accionPendiente.parametros?.id_fila &&
                   `(ID: ${accionPendiente.parametros.id_fila})`
