@@ -47,6 +47,9 @@ export default function TabInstrucciones({ agente, onSave, guardando }) {
     max_historial: 20,
     max_conocimiento: 15,
     prompt_sistema_custom: '',
+    instrucciones_cierre: '',
+    plantilla_salidas: '',
+    label_variables: '',
     agentes_delegables: []
   })
 
@@ -82,6 +85,9 @@ export default function TabInstrucciones({ agente, onSave, guardando }) {
         max_historial: agente.max_historial || 20,
         max_conocimiento: agente.max_conocimiento || 15,
         prompt_sistema_custom: agente.prompt_sistema_custom || '',
+        instrucciones_cierre: agente.instrucciones_cierre || '',
+        plantilla_salidas: agente.plantilla_salidas || '',
+        label_variables: agente.label_variables || '',
         agentes_delegables: agente.agentes_delegables || []
       }
       setForm(f)
@@ -127,26 +133,30 @@ export default function TabInstrucciones({ agente, onSave, guardando }) {
     onSave(datos)
   }
 
-  // Generar preview del prompt
+  // Generar preview del prompt — refleja exactamente lo que envia
+  // _build_agent_prompt en flow_engine.py: solo concatena los campos DB,
+  // sin etiquetas en español hardcodeadas.
   const generarPreview = () => {
     if (usarPromptCustom && form.prompt_sistema_custom) {
       return form.prompt_sistema_custom
     }
-    let p = `Eres ${form.nombre || 'un asistente'}.`
-    if (form.objetivo) p += `\n\nOBJETIVO: ${form.objetivo}`
-    if (form.personalidad) {
-      p += `\n\nPERSONALIDAD:\n${form.personalidad}`
-    } else if (form.tono) {
-      p += `\n\nTONO: Debes comunicarte de forma ${form.tono}.`
+    const partes = []
+    const campos = [
+      'nombre', 'descripcion', 'objetivo',
+      'personalidad', 'tono', 'idioma',
+      'instrucciones', 'reglas', 'restricciones',
+      'formato_respuesta', 'mensaje_fuera_tema', 'ejemplos'
+    ]
+    for (const c of campos) {
+      const v = form[c]
+      if (!v) continue
+      if (c === 'tono' && form.personalidad) continue
+      if (c === 'idioma' && v === 'espanol') continue
+      partes.push(String(v))
     }
-    if (form.idioma && form.idioma !== 'espanol') p += `\n\nIDIOMA: Debes responder siempre en ${form.idioma}.`
-    if (form.instrucciones) p += `\n\nINSTRUCCIONES:\n${form.instrucciones}`
-    if (form.reglas) p += `\n\nREGLAS (debes cumplir SIEMPRE):\n${form.reglas}`
-    if (form.restricciones) p += `\n\nRESTRICCIONES (NUNCA hagas esto):\n${form.restricciones}`
-    if (form.formato_respuesta) p += `\n\nFORMATO DE RESPUESTA:\n${form.formato_respuesta}`
-    if (form.mensaje_fuera_tema) p += `\n\nSi te preguntan algo fuera de tu alcance, responde: ${form.mensaje_fuera_tema}`
-    if (form.ejemplos) p += `\n\nEJEMPLOS DE CONVERSACION:\n${form.ejemplos}`
-    if (form.condiciones_cierre) p += `\n\nCondiciones para finalizar:\n${form.condiciones_cierre}`
+    let p = partes.join('\n\n')
+    if (form.instrucciones_cierre) p += (p ? '\n\n' : '') + form.instrucciones_cierre
+    if (form.condiciones_cierre) p += (p ? '\n\n' : '') + form.condiciones_cierre
     return p
   }
 
@@ -489,6 +499,39 @@ export default function TabInstrucciones({ agente, onSave, guardando }) {
                 onChange={e => actualizar('max_conocimiento', parseInt(e.target.value) || 15)}
               />
               <span className="agente-field-hint">Cuantos fragmentos de la base de conocimiento incluir</span>
+            </label>
+
+            {/* Campos sin hardcode: texto que antes vivia fijo en flow_engine.py */}
+            <label className="agente-field agente-field-full">
+              <span>Instrucciones de cierre (multi-turno)</span>
+              <textarea
+                value={form.instrucciones_cierre}
+                onChange={e => actualizar('instrucciones_cierre', e.target.value)}
+                placeholder={`Ej:\n--- INSTRUCCIONES DE CIERRE ---\nEsta es una conversacion multi-turno. Debes seguir conversando hasta cumplir tu objetivo.\nCuando hayas CUMPLIDO tu objetivo, incluye exactamente [FINALIZAR] al FINAL de tu mensaje.\nNO uses [FINALIZAR] si aun necesitas mas informacion.`}
+                rows={6}
+              />
+              <span className="agente-field-hint">Texto que se anexa al system prompt cuando el agente corre en modo multi-turno. Vacio = no se inyecta nada.</span>
+            </label>
+
+            <label className="agente-field agente-field-full">
+              <span>Plantilla de salidas configurables</span>
+              <textarea
+                value={form.plantilla_salidas}
+                onChange={e => actualizar('plantilla_salidas', e.target.value)}
+                placeholder={`Placeholders disponibles:\n  {salidas} = lista generada de las salidas del nodo\n  {ejemplo} = ejemplo del tag [SALIDA:id][FINALIZAR]\n\nEj:\nSALIDAS DISPONIBLES - elige UNA:\n{salidas}\n\nIncluye {ejemplo} al FINAL de tu mensaje.`}
+                rows={6}
+              />
+              <span className="agente-field-hint">Solo se usa cuando el nodo tiene salidas configuradas. Vacio = se inyecta solo la lista cruda.</span>
+            </label>
+
+            <label className="agente-field agente-field-full">
+              <span>Encabezado para variables del usuario</span>
+              <input
+                value={form.label_variables}
+                onChange={e => actualizar('label_variables', e.target.value)}
+                placeholder="Ej: DATOS DEL USUARIO:"
+              />
+              <span className="agente-field-hint">Titulo que se imprime antes de las variables del flujo. Vacio = se imprimen sin titulo.</span>
             </label>
 
             {/* Prompt custom override */}
