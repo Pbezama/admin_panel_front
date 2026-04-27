@@ -191,6 +191,8 @@ function TabInstrucciones({ config, setConfig, notificar }) {
     prompt_reglas: config.prompt_reglas || '',
     prompt_consideraciones: config.prompt_consideraciones || '',
     usar_base_cuentas: config.usar_base_cuentas ?? true,
+    prompt_senales_cierre: config.prompt_senales_cierre || '',
+    regla_sin_emojis: config.regla_sin_emojis || '',
   })
   const [guardando, setGuardando] = useState(false)
 
@@ -280,6 +282,38 @@ function TabInstrucciones({ config, setConfig, notificar }) {
         </p>
       </Seccion>
 
+      <Seccion
+        titulo="Señales de cierre"
+        descripcion="Indicaciones al modelo sobre cuándo cerrar la conversación con [FIN_CONVERSACION]."
+        defaultOpen={false}
+      >
+        <textarea
+          className="cn-textarea"
+          rows={8}
+          value={campos.prompt_senales_cierre}
+          onChange={(e) => upd('prompt_senales_cierre', e.target.value)}
+          placeholder="Solo usa la señal [FIN_CONVERSACION] cuando..."
+        />
+        <p className="cn-hint" style={{ marginTop: 8 }}>
+          Si lo dejas vacío, el bot usa un texto por defecto. Ajustá si el bot cierra
+          conversaciones de más o de menos.
+        </p>
+      </Seccion>
+
+      <Seccion
+        titulo="Regla anti-emojis"
+        descripcion="Texto que se inyecta como prioridad máxima cuando 'Permitir emojis' está apagado en Comportamiento."
+        defaultOpen={false}
+      >
+        <textarea
+          className="cn-textarea"
+          rows={4}
+          value={campos.regla_sin_emojis}
+          onChange={(e) => upd('regla_sin_emojis', e.target.value)}
+          placeholder="Bajo NINGUNA circunstancia uses emojis..."
+        />
+      </Seccion>
+
       <div className="cn-actions">
         <button className="cn-btn cn-btn-primary" onClick={guardar} disabled={guardando}>
           {guardando ? <Loader2 className="cn-spin" size={16} /> : <Save size={16} />}
@@ -300,6 +334,7 @@ function TabComportamiento({ config, setConfig, notificar }) {
     max_tokens: config.max_tokens ?? 1500,
     parallel_tool_calls: config.parallel_tool_calls ?? true,
     usar_emojis: config.usar_emojis ?? true,
+    permitir_derivacion: config.permitir_derivacion ?? false,
     max_mensajes_conversacion: config.max_mensajes_conversacion ?? 60,
     max_tokens_contexto: config.max_tokens_contexto ?? 100000,
     max_iteraciones_tools: config.max_iteraciones_tools ?? 3,
@@ -310,9 +345,13 @@ function TabComportamiento({ config, setConfig, notificar }) {
     mensaje_despedida: config.mensaje_despedida || '',
     mensaje_timeout: config.mensaje_timeout || '',
     mensaje_error: config.mensaje_error || '',
+    mensaje_fallback: config.mensaje_fallback || '',
     webhook_derivacion: config.webhook_derivacion || '',
     webhook_callback: config.webhook_callback || '',
     canales_activos: config.canales_activos || ['webchat'],
+    prompt_resumen: config.prompt_resumen || '',
+    nota_encabezado_cierre: config.nota_encabezado_cierre || '',
+    nota_encabezado_derivar: config.nota_encabezado_derivar || '',
   })
   const [guardando, setGuardando] = useState(false)
 
@@ -463,6 +502,17 @@ function TabComportamiento({ config, setConfig, notificar }) {
             herramientas incluyen)
           </span>
         </label>
+        <label className="cn-check">
+          <input
+            type="checkbox"
+            checked={campos.permitir_derivacion}
+            onChange={(e) => upd('permitir_derivacion', e.target.checked)}
+          />
+          <span>
+            Permitir derivación a humano (si está apagado, el bot nunca sugiere
+            contactar por otra vía ni usa la señal [DERIVAR])
+          </span>
+        </label>
       </Seccion>
 
       <Seccion
@@ -561,6 +611,46 @@ function TabComportamiento({ config, setConfig, notificar }) {
           rows={2}
           value={campos.mensaje_error}
           onChange={(e) => upd('mensaje_error', e.target.value)}
+        />
+
+        <label className="cn-label">Mensaje de fallback (cuando el modelo no genera respuesta)</label>
+        <textarea
+          className="cn-textarea"
+          rows={2}
+          value={campos.mensaje_fallback}
+          onChange={(e) => upd('mensaje_fallback', e.target.value)}
+          placeholder="Gracias por contactarte con nosotros."
+        />
+      </Seccion>
+
+      <Seccion
+        titulo="Cierre y resumen en Bird"
+        descripcion="Cuando se cierra una conversación, se publica una nota en Bird con un resumen estructurado."
+        defaultOpen={false}
+      >
+        <label className="cn-label">Encabezado de la nota al cerrar</label>
+        <input
+          className="cn-input"
+          value={campos.nota_encabezado_cierre}
+          onChange={(e) => upd('nota_encabezado_cierre', e.target.value)}
+          placeholder="[Conversación cerrada por el bot]"
+        />
+
+        <label className="cn-label">Encabezado de la nota al derivar (si está permitida)</label>
+        <input
+          className="cn-input"
+          value={campos.nota_encabezado_derivar}
+          onChange={(e) => upd('nota_encabezado_derivar', e.target.value)}
+          placeholder="[Conversación derivada por el bot]"
+        />
+
+        <label className="cn-label">Instrucción para generar el resumen (gpt-4o-mini)</label>
+        <textarea
+          className="cn-textarea"
+          rows={6}
+          value={campos.prompt_resumen}
+          onChange={(e) => upd('prompt_resumen', e.target.value)}
+          placeholder="Resumí la conversación entre cliente y chatbot en formato accionable..."
         />
       </Seccion>
 
