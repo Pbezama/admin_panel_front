@@ -299,6 +299,7 @@ function TabComportamiento({ config, setConfig, notificar }) {
     temperatura: config.temperatura ?? 0.6,
     max_tokens: config.max_tokens ?? 1500,
     parallel_tool_calls: config.parallel_tool_calls ?? true,
+    usar_emojis: config.usar_emojis ?? true,
     max_mensajes_conversacion: config.max_mensajes_conversacion ?? 60,
     max_tokens_contexto: config.max_tokens_contexto ?? 100000,
     max_iteraciones_tools: config.max_iteraciones_tools ?? 3,
@@ -449,6 +450,18 @@ function TabComportamiento({ config, setConfig, notificar }) {
             onChange={(e) => upd('parallel_tool_calls', e.target.checked)}
           />
           <span>Permitir llamadas a tools en paralelo</span>
+        </label>
+        <label className="cn-check">
+          <input
+            type="checkbox"
+            checked={campos.usar_emojis}
+            onChange={(e) => upd('usar_emojis', e.target.checked)}
+          />
+          <span>
+            Permitir emojis en las respuestas (si está apagado, el bot recibe una
+            regla crítica de no usar emojis incluso si la base de conocimiento o las
+            herramientas incluyen)
+          </span>
         </label>
       </Seccion>
 
