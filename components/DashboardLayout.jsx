@@ -22,6 +22,7 @@ const viewTitles = {
   'webchat-config': 'Chat Web',
   'tablas-custom': 'Mis Tablas',
   'chat-academico': 'Chat Academico',
+  'chat-numancia': 'Chat Numancia',
 }
 
 export default function DashboardLayout({ children }) {

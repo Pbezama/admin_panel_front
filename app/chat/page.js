@@ -19,6 +19,7 @@ import WebChatConfigView from '@/components/Views/WebChatConfigView'
 import TablasCustomView from '@/components/Views/TablasCustomView'
 import GoogleView from '@/components/Views/GoogleView'
 import ChatAcademicoView from '@/components/Views/ChatAcademicoView'
+import ChatNumanciaView from '@/components/Views/ChatNumanciaView'
 import DashboardLayout from '@/components/DashboardLayout'
 import { RotateCcw, Send, ChevronDown, ChevronUp, Database, Sparkles, PanelRightOpen, PanelRightClose } from 'lucide-react'
 import '@/styles/Chat.css'
@@ -871,6 +872,8 @@ El usuario ya aprobo esta delegacion. Procede a pedir confirmacion para agregar 
         return <GoogleView />
       case 'chat-academico':
         return <ChatAcademicoView />
+      case 'chat-numancia':
+        return <ChatNumanciaView />
       default:
         return renderChat()
     }

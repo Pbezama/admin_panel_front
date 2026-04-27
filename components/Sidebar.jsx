@@ -22,7 +22,8 @@ import {
   Globe,
   Table,
   Cloud,
-  GraduationCap
+  GraduationCap,
+  ShoppingBag
 } from 'lucide-react'
 
 const navGroups = [
@@ -60,6 +61,12 @@ const navGroups = [
     label: 'PreUCV',
     items: [
       { id: 'chat-academico', label: 'Chat Academico', icon: GraduationCap, desc: 'Configuracion ChatBot PreUCV', visiblePara: 'preucv' },
+    ]
+  },
+  {
+    label: 'Numancia',
+    items: [
+      { id: 'chat-numancia', label: 'Chat Numancia', icon: ShoppingBag, desc: 'Configuracion ChatBot Numancia Sports', visiblePara: 'numancia' },
     ]
   }
 ]
